@@ -1,57 +1,42 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
 import ReactMarkdown from "react-markdown";
-import {
-  Check,
-  Copy,
-  CornerDownLeft,
-  Mic,
-  Send,
-  Sparkles,
-} from "lucide-react";
+import Image from "next/image";
+import { Check, Copy } from "lucide-react";
 
 import { useTranscript } from "@/app/contexts/TranscriptContext";
-import { SessionStatus } from "@/app/types";
+import { TranscriptItem } from "@/app/types";
 
-const QUICK_PROMPTS = [
-  {
-    label: "練自我介紹",
-    prompt: "我想練習 60 到 90 秒的自我介紹，請用教練模式帶我開始。",
-  },
-  {
-    label: "練論文說明",
-    prompt: "我想練習向非本科面試官說明我的論文，請先出第一題。",
-  },
-  {
-    label: "練專案追問",
-    prompt: "我想練習專案經驗，請像面試官一樣一層一層追問。",
-  },
-  {
-    label: "直接模擬面試",
-    prompt: "請切換成模擬面試模式；先問我應徵的職位，再開始提問。",
-  },
-];
-
-interface TranscriptProps {
+export interface TranscriptProps {
   userText: string;
   setUserText: (value: string) => void;
   onSendMessage: () => void;
-  onQuickPrompt: (prompt: string) => void;
   canSend: boolean;
-  sessionStatus: SessionStatus;
+  downloadRecording: () => void;
   handleTalkButtonDown: () => void;
   handleTalkButtonUp: () => void;
   isPTTUserSpeaking: boolean;
   isPTTActive: boolean;
-  isListening: boolean;
+  onRate?: (targetEventId: string, rating: number) => void;
+  ratingsByTargetId?: Record<string, number>;
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+const CopyButton = ({ text }: { text: string }) => {
+  const [copied, setCopied] = React.useState(false);
 
-  const copy = async () => {
-    await navigator.clipboard.writeText(text);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
   };
@@ -59,214 +44,334 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      onClick={copy}
-      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-slate-400 transition hover:bg-black/[0.04] hover:text-slate-600"
-      aria-label="複製回答"
+      onClick={handleCopy}
+      className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-all duration-200 hover:bg-gray-200 ${
+        copied ? "bg-green-50 text-green-600" : "text-gray-500"
+      }`}
+      title={copied ? "Copied!" : "Copy"}
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
-      {copied ? "已複製" : "複製"}
+      {copied ? "Copied" : "Copy"}
     </button>
+  );
+};
+
+const AppleMicIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={isActive ? "text-white" : "text-gray-700"}
+  >
+    <rect x="7" y="2" width="6" height="10" rx="3" fill="currentColor" />
+    <path
+      d="M5 10C5 12.7614 7.23858 15 10 15C12.7614 15 15 12.7614 15 10"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <line x1="10" y1="15" x2="10" y2="18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="7" y1="18" x2="13" y2="18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+type RatingOption = { value: number; emoji: string; label: string };
+
+const RATING_OPTIONS: RatingOption[] = [
+  { value: 100, emoji: "😍", label: "非常滿意" },
+  { value: 80, emoji: "😊", label: "滿意" },
+  { value: 50, emoji: "😐", label: "普通" },
+  { value: 20, emoji: "😕", label: "不滿意" },
+  { value: 0, emoji: "😡", label: "非常不滿意" },
+];
+
+const RatingBar = ({
+  selected,
+  onSelect,
+}: {
+  selected?: number;
+  onSelect?: (score: number) => void;
+}) => {
+  const [clickedValue, setClickedValue] = React.useState<number | null>(null);
+  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    []
+  );
+
+  const handleSelect = (value: number) => {
+    setClickedValue(value);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setClickedValue(null), 550);
+    onSelect?.(value);
+  };
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+    if (selected === undefined) return;
+    const index = RATING_OPTIONS.findIndex((option) => option.value === selected);
+    if (index < 0) return;
+
+    if (event.key === "ArrowRight") {
+      handleSelect(RATING_OPTIONS[Math.min(index + 1, RATING_OPTIONS.length - 1)].value);
+    } else if (event.key === "ArrowLeft") {
+      handleSelect(RATING_OPTIONS[Math.max(index - 1, 0)].value);
+    }
+  };
+
+  const activeIndex =
+    selected === undefined
+      ? -1
+      : RATING_OPTIONS.findIndex((option) => option.value === selected);
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <span className="text-xs text-gray-500">滿意度：</span>
+      <div
+        className="flex items-center gap-2"
+        role="radiogroup"
+        aria-label="滿意度評分"
+        onKeyDown={handleKeyDown}
+      >
+        {RATING_OPTIONS.map((option, index) => {
+          const isActive = selected === option.value;
+          const tabIndex = activeIndex === -1 ? (index === 0 ? 0 : -1) : isActive ? 0 : -1;
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-label={option.label}
+              title={option.label}
+              role="radio"
+              aria-checked={isActive}
+              tabIndex={tabIndex}
+              onClick={() => handleSelect(option.value)}
+              className={[
+                "relative flex h-8 w-8 select-none items-center justify-center rounded-full border",
+                "transform transition duration-150 ease-out",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400",
+                "active:scale-95",
+                isActive
+                  ? "scale-105 border-blue-500 bg-white shadow-sm ring-2 ring-blue-200"
+                  : "border-gray-200 bg-white hover:border-gray-300",
+              ].join(" ")}
+            >
+              {clickedValue === option.value && (
+                <span className="pointer-events-none absolute inset-0 animate-ping rounded-full ring-2 ring-blue-300 opacity-50" />
+              )}
+              <span className="text-base leading-none">{option.emoji}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+function pickTargetEventId(item: TranscriptItem): string {
+  const data = item.data as
+    | { eventId?: string; id?: string; item_id?: string; responseId?: string }
+    | undefined;
+  const itemWithEventId = item as TranscriptItem & { eventId?: string };
+
+  return (
+    data?.eventId ||
+    data?.id ||
+    data?.item_id ||
+    data?.responseId ||
+    itemWithEventId.eventId ||
+    item.itemId
   );
 }
 
-export default function Transcript({
+function Transcript({
   userText,
   setUserText,
   onSendMessage,
-  onQuickPrompt,
   canSend,
-  sessionStatus,
   handleTalkButtonDown,
   handleTalkButtonUp,
   isPTTUserSpeaking,
   isPTTActive,
-  isListening,
+  onRate,
+  ratingsByTargetId,
 }: TranscriptProps) {
-  const { transcriptItems } = useTranscript();
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const { transcriptItems, toggleTranscriptItemExpand } = useTranscript();
+  const transcriptRef = React.useRef<HTMLDivElement | null>(null);
+  const previousItemsRef = React.useRef<TranscriptItem[]>([]);
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
 
-  const messages = useMemo(
-    () =>
-      transcriptItems.filter(
-        (item) => !item.isHidden && item.type === "MESSAGE"
-      ),
-    [transcriptItems]
+  const firstAssistantIndex = transcriptItems.findIndex(
+    (item) => !item.isHidden && item.type === "MESSAGE" && item.role === "assistant"
   );
 
-  const hasUserMessage = messages.some((item) => item.role === "user");
-  const hasCompletedAssistantMessage = messages.some(
-    (item) =>
-      item.role === "assistant" &&
-      item.status === "DONE" &&
-      Boolean(item.title?.trim())
-  );
-
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
+  React.useEffect(() => {
+    const previousItems = previousItemsRef.current;
+    const hasNewMessage = transcriptItems.length > previousItems.length;
+    const hasUpdatedMessage = transcriptItems.some((newItem, index) => {
+      const oldItem = previousItems[index];
+      return oldItem && (newItem.title !== oldItem.title || newItem.data !== oldItem.data);
     });
-  }, [messages]);
 
-  useEffect(() => {
+    if ((hasNewMessage || hasUpdatedMessage) && transcriptRef.current) {
+      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+    }
+    previousItemsRef.current = transcriptItems;
+  }, [transcriptItems]);
+
+  React.useEffect(() => {
     if (canSend) inputRef.current?.focus();
   }, [canSend]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div
-        ref={scrollRef}
-        className="flex-1 space-y-5 overflow-y-auto px-5 py-6 sm:px-7 sm:py-8"
-      >
-        {messages.length === 0 && (
-          <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center py-12 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-[22px] bg-[#e9f4d3] text-[#245447]">
-              <Sparkles size={27} />
-            </div>
-            <h2 className="mt-5 text-xl font-semibold tracking-[-0.02em]">
-              {sessionStatus === "CONNECTING"
-                ? "正在準備你的練習空間"
-                : sessionStatus === "CONNECTED"
-                  ? "教練正在開場"
-                  : "從一段真實回答開始"}
-            </h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-              {sessionStatus === "DISCONNECTED"
-                ? "點選「開始語音練習」，允許麥克風後即可說話；也能全程使用文字。"
-                : "不用先準備完美答案。先照你的方式說，教練會從最值得追問的地方開始。"}
-            </p>
-          </div>
-        )}
+    <div className="flex min-h-0 flex-1 flex-col rounded-xl bg-white">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div ref={transcriptRef} className="flex h-full flex-col gap-y-4 overflow-auto p-4">
+          {transcriptItems.map((item, index) => {
+            const { itemId, type, role, data, expanded, timestamp, title = "", isHidden } = item;
+            if (isHidden) return null;
 
-        {messages.map((item) => {
-          const isUser = item.role === "user";
-          const text = item.title ?? "";
-          const isPlaceholder = text.startsWith("[") && text.endsWith("]");
+            if (type === "MESSAGE") {
+              const isUser = role === "user";
+              const isBracketedMessage = title.startsWith("[") && title.endsWith("]");
+              const displayTitle = isBracketedMessage ? title.slice(1, -1) : title;
+              const targetEventId = isUser ? "" : pickTargetEventId(item);
+              const selectedRating = !isUser
+                ? ratingsByTargetId?.[targetEventId]
+                : undefined;
+              const showRatingBar =
+                !isUser && index !== firstAssistantIndex && typeof onRate === "function";
 
-          return (
-            <div
-              key={item.itemId}
-              className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-            >
-              <div className={`max-w-[88%] sm:max-w-[78%] ${isUser ? "text-right" : ""}`}>
+              return (
                 <div
-                  className={`rounded-[22px] px-4 py-3 text-left text-[15px] leading-7 ${
-                    isUser
-                      ? "rounded-br-md bg-[#183d35] text-white"
-                      : "rounded-bl-md border border-black/[0.05] bg-white text-slate-800 shadow-[0_8px_30px_rgba(20,40,35,0.06)]"
-                  } ${isPlaceholder ? "italic opacity-60" : ""}`}
+                  key={itemId}
+                  className={`flex flex-col justify-end ${isUser ? "items-end" : "items-start"}`}
                 >
-                  <ReactMarkdown>{
-                    isPlaceholder ? text.slice(1, -1) : text
-                  }</ReactMarkdown>
-                </div>
-                {!isUser && text && !isPlaceholder && (
-                  <div className="mt-1 flex justify-start pl-1">
-                    <CopyButton text={text} />
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+                  <div className="relative max-w-lg">
+                    <div
+                      className={`max-w-lg rounded-xl p-3 ${
+                        isUser ? "bg-gray-900 text-gray-100" : "bg-gray-100 text-black"
+                      }`}
+                    >
+                      <div
+                        className={`font-mono text-xs ${
+                          isUser ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
+                        {timestamp}
+                      </div>
+                      <div
+                        className={`whitespace-pre-wrap ${
+                          isBracketedMessage ? "italic text-gray-400" : ""
+                        }`}
+                      >
+                        <ReactMarkdown>{displayTitle}</ReactMarkdown>
+                      </div>
+                      {showRatingBar && (
+                        <RatingBar
+                          selected={selectedRating}
+                          onSelect={(score) => onRate?.(targetEventId, score)}
+                        />
+                      )}
+                    </div>
 
-        {canSend && !hasUserMessage && hasCompletedAssistantMessage && (
-          <div className="mx-auto max-w-2xl pt-2">
-            <p className="mb-2 text-center text-xs font-medium text-slate-400">
-              或直接選一個練習方向
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {QUICK_PROMPTS.map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => onQuickPrompt(item.prompt)}
-                  className="rounded-full border border-[#183d35]/15 bg-white px-3.5 py-2 text-xs font-medium text-[#245447] transition hover:border-[#183d35]/30 hover:bg-[#f4f8ed]"
+                    {!isUser && (
+                      <div className="absolute right-2 top-2">
+                        <CopyButton text={displayTitle} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            if (type === "BREADCRUMB") {
+              return (
+                <div
+                  key={itemId}
+                  className="flex flex-col items-start justify-start text-sm text-gray-500"
                 >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+                  <span className="font-mono text-xs">{timestamp}</span>
+                  <div
+                    className={`flex items-center whitespace-pre-wrap font-mono text-sm text-gray-800 ${
+                      data ? "cursor-pointer" : ""
+                    }`}
+                    onClick={() => data && toggleTranscriptItemExpand(itemId)}
+                  >
+                    {data && (
+                      <span
+                        className={`mr-1 select-none font-mono text-gray-400 transition-transform duration-200 ${
+                          expanded ? "rotate-90" : "rotate-0"
+                        }`}
+                      >
+                        ▶
+                      </span>
+                    )}
+                    {title}
+                  </div>
+                  {expanded && data && (
+                    <div className="text-left text-gray-800">
+                      <pre className="mb-2 ml-1 mt-2 whitespace-pre-wrap break-words border-l-2 border-gray-200 pl-2 font-mono text-xs">
+                        {JSON.stringify(data, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div key={itemId} className="flex justify-center font-mono text-sm italic text-gray-500">
+                Unknown item type: {type} <span className="ml-2 text-xs">{timestamp}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="border-t border-black/[0.06] bg-white/70 px-4 py-4 backdrop-blur sm:px-7">
-        {canSend && (
-          <div className="mb-3 flex items-center justify-between gap-3 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  isListening ? "animate-pulse bg-rose-500" : "bg-emerald-500"
-                }`}
-              />
-              {isListening
-                ? "正在收音"
-                : isPTTActive
-                  ? "按住麥克風再回答"
-                  : "可直接開口回答"}
-            </span>
-            <span className="hidden items-center gap-1 sm:flex">
-              <CornerDownLeft size={12} /> Enter 送出 · Shift + Enter 換行
-            </span>
-          </div>
-        )}
+      <div className="flex flex-shrink-0 items-center gap-x-2 border-t border-gray-200 p-4">
+        <input
+          ref={inputRef}
+          type="text"
+          value={userText}
+          onChange={(event) => setUserText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && canSend) onSendMessage();
+          }}
+          className="flex-1 px-4 py-2 focus:outline-none"
+          placeholder="請輸入文字..."
+        />
 
-        <div className="flex items-end gap-2 rounded-[22px] border border-black/[0.09] bg-white p-2 shadow-[0_10px_35px_rgba(24,61,53,0.07)] focus-within:border-[#245447]/35">
-          <textarea
-            ref={inputRef}
-            rows={1}
-            value={userText}
-            onChange={(event) => setUserText(event.target.value)}
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                canSend &&
-                userText.trim()
-              ) {
-                event.preventDefault();
-                onSendMessage();
-              }
-            }}
-            disabled={!canSend}
-            placeholder={canSend ? "也可以用文字回答…" : "開始練習後可輸入文字"}
-            className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-3 py-2.5 text-sm leading-6 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
-          />
-
-          {isPTTActive && (
-            <button
-              type="button"
-              onPointerDown={handleTalkButtonDown}
-              onPointerUp={handleTalkButtonUp}
-              onPointerLeave={() => {
-                if (isPTTUserSpeaking) handleTalkButtonUp();
-              }}
-              disabled={!canSend}
-              className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition ${
-                isPTTUserSpeaking
-                  ? "scale-95 bg-rose-500 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              } disabled:opacity-40`}
-              aria-label={isPTTUserSpeaking ? "放開送出語音" : "按住說話"}
-            >
-              <Mic size={18} />
-            </button>
-          )}
-
+        {isPTTActive && (
           <button
             type="button"
-            onClick={onSendMessage}
-            disabled={!canSend || !userText.trim()}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#183d35] text-white transition hover:bg-[#245447] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-            aria-label="送出訊息"
+            onClick={isPTTUserSpeaking ? handleTalkButtonUp : handleTalkButtonDown}
+            disabled={!canSend}
+            className={`rounded-full p-2 transition-colors disabled:opacity-50 ${
+              isPTTUserSpeaking ? "bg-red-500 text-white" : "bg-gray-200 text-gray-700"
+            }`}
+            aria-label={isPTTUserSpeaking ? "Stop recording and send" : "Start recording"}
           >
-            <Send size={18} />
+            <AppleMicIcon isActive={isPTTUserSpeaking} />
           </button>
-        </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onSendMessage}
+          disabled={!canSend || !userText.trim()}
+          className="rounded-full bg-gray-900 px-2 py-2 text-white disabled:opacity-50"
+        >
+          <Image src="arrow.svg" alt="Send" width={24} height={24} />
+        </button>
       </div>
     </div>
   );
 }
+
+export default Transcript;

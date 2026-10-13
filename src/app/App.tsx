@@ -1,49 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  AudioLines,
-  BrainCircuit,
-  CircleStop,
-  MessageCircleQuestion,
-  Mic2,
-  RotateCcw,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import Image from "next/image";
 
 import Transcript from "./components/Transcript";
+import Events from "./components/Events";
 import { allAgentSets, defaultAgentSetKey } from "@/app/agentConfigs";
 import { INTERVIEW_WELCOME_INSTRUCTION } from "@/app/data/interviewCoachKnowledge";
 import { useEvent } from "@/app/contexts/EventContext";
-import { useTranscript } from "@/app/contexts/TranscriptContext";
 import { useHandleServerEvent } from "./hooks/useHandleServerEvent";
 import { SessionStatus } from "@/app/types";
 
 const agentSet = allAgentSets[defaultAgentSetKey];
 const interviewCoach = agentSet[0];
 
-const PRACTICE_AREAS = [
-  {
-    icon: Sparkles,
-    title: "自我介紹",
-    body: "整理 60–90 秒主線，補上可信的經驗證據。",
-  },
-  {
-    icon: BrainCircuit,
-    title: "論文研究",
-    body: "從問題、方法到貢獻，練到非本科面試官也能懂。",
-  },
-  {
-    icon: MessageCircleQuestion,
-    title: "專案經驗",
-    body: "拆清楚個人角色、關鍵決策、成果與反思。",
-  },
-];
-
 function App() {
   const { logClientEvent, logServerEvent } = useEvent();
-  const { resetTranscript } = useTranscript();
 
   const [sessionStatus, setSessionStatus] =
     useState<SessionStatus>("DISCONNECTED");
@@ -56,7 +28,10 @@ function App() {
   const [isListening, setIsListening] = useState(false);
   const [isOutputAudioBufferActive, setIsOutputAudioBufferActive] =
     useState(false);
-  const [connectionError, setConnectionError] = useState("");
+  const [, setConnectionError] = useState("");
+  const [ratingsByTargetId, setRatingsByTargetId] = useState<
+    Record<string, number>
+  >({});
 
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -323,6 +298,10 @@ function App() {
     if (sessionStatus === "CONNECTED") updateSession();
   }, [isPTTActive, sessionStatus, updateSession]);
 
+  useEffect(() => {
+    void connectToRealtime();
+  }, [connectToRealtime]);
+
   useEffect(() => stopSession, [stopSession]);
 
   const sendTextMessage = useCallback(
@@ -381,169 +360,94 @@ function App() {
     );
   };
 
-  const restartSession = async () => {
-    stopSession();
-    resetTranscript();
-    await connectToRealtime();
-  };
-
   const isConnected = sessionStatus === "CONNECTED";
 
+  const handleMicrophoneClick = () => {
+    if (isOutputAudioBufferActive) {
+      cancelAssistantSpeech();
+      return;
+    }
+
+    setIsPTTActive((active) => !active);
+  };
+
+  const handleRating = (targetEventId: string, rating: number) => {
+    setRatingsByTargetId((ratings) => ({
+      ...ratings,
+      [targetEventId]: rating,
+    }));
+  };
+
   return (
-    <main className="min-h-screen bg-[#f4f2ec] text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-4 p-4 lg:flex-row lg:p-6">
-        <aside className="flex w-full flex-col rounded-[28px] bg-[#183d35] p-6 text-white shadow-[0_24px_80px_rgba(24,61,53,0.18)] lg:w-[360px] lg:p-8">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#d9ff6f] text-[#183d35]">
-              <AudioLines size={24} strokeWidth={2.4} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100/70">
-                Interview practice
-              </p>
-              <h1 className="text-xl font-semibold">面試陪練</h1>
-            </div>
-          </div>
-
-          <div className="mt-9">
-            <p className="max-w-[18rem] text-[28px] font-semibold leading-[1.2] tracking-[-0.03em]">
-              把真實經驗，練成面試官聽得懂的答案。
-            </p>
-            <p className="mt-4 text-sm leading-6 text-emerald-50/70">
-              一次一題、逐層追問。卡住時可以換題、要提示，也可以請教練示範。
-            </p>
-          </div>
-
-          <div className="mt-8 space-y-3">
-            {PRACTICE_AREAS.map(({ icon: Icon, title, body }) => (
-              <div
-                key={title}
-                className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3.5"
-              >
-                <Icon className="mt-0.5 shrink-0 text-[#d9ff6f]" size={18} />
-                <div>
-                  <p className="text-sm font-semibold">{title}</p>
-                  <p className="mt-1 text-xs leading-5 text-emerald-50/60">{body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-auto pt-8">
-            <div className="flex items-start gap-2 rounded-2xl bg-black/10 p-3 text-xs leading-5 text-emerald-50/65">
-              <ShieldCheck className="mt-0.5 shrink-0" size={16} />
-              <p>教練不會替你捏造經歷；專業內容無法驗證時會標示待查證。</p>
-            </div>
-
-            <div className="mt-4 flex gap-2">
-              {!isConnected ? (
-                <button
-                  type="button"
-                  onClick={connectToRealtime}
-                  disabled={sessionStatus === "CONNECTING"}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#d9ff6f] px-4 py-3 text-sm font-semibold text-[#183d35] transition hover:bg-[#e4ff98] disabled:cursor-wait disabled:opacity-70"
-                >
-                  <Mic2 size={17} />
-                  {sessionStatus === "CONNECTING" ? "正在連線…" : "開始語音練習"}
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={restartSession}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#d9ff6f] px-4 py-3 text-sm font-semibold text-[#183d35] transition hover:bg-[#e4ff98]"
-                  >
-                    <RotateCcw size={16} />
-                    重新開始
-                  </button>
-                  <button
-                    type="button"
-                    onClick={stopSession}
-                    aria-label="結束練習"
-                    className="grid h-11 w-11 place-items-center rounded-2xl border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
-                  >
-                    <CircleStop size={18} />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </aside>
-
-        <section className="flex min-h-[680px] flex-1 flex-col overflow-hidden rounded-[28px] border border-black/[0.06] bg-[#fffdf9] shadow-[0_24px_80px_rgba(28,45,40,0.08)]">
-          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.07] px-5 py-4 sm:px-7">
-            <div>
-              <p className="text-sm font-semibold">學生／新鮮人面試教練</p>
-              <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    isConnected
-                      ? "bg-emerald-500"
-                      : sessionStatus === "CONNECTING"
-                        ? "animate-pulse bg-amber-400"
-                        : "bg-slate-300"
-                  }`}
-                />
-                {isConnected
-                  ? isOutputAudioBufferActive
-                    ? "教練正在回答"
-                    : isListening
-                      ? "正在聽你說"
-                      : "已連線，換你回答"
-                  : sessionStatus === "CONNECTING"
-                    ? "正在準備語音空間"
-                    : "尚未開始"}
-              </div>
-            </div>
-
-            <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-medium">
-              <button
-                type="button"
-                onClick={() => setIsPTTActive(false)}
-                className={`rounded-lg px-3 py-2 transition ${
-                  !isPTTActive
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                自然對話
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsPTTActive(true)}
-                className={`rounded-lg px-3 py-2 transition ${
-                  isPTTActive
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                按住說話
-              </button>
-            </div>
-          </header>
-
-          {connectionError && (
-            <div className="mx-5 mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 sm:mx-7">
-              {connectionError}
-            </div>
-          )}
-
-          <Transcript
-            userText={userText}
-            setUserText={setUserText}
-            onSendMessage={() => sendTextMessage()}
-            onQuickPrompt={sendTextMessage}
-            canSend={isConnected}
-            sessionStatus={sessionStatus}
-            handleTalkButtonDown={handleTalkButtonDown}
-            handleTalkButtonUp={handleTalkButtonUp}
-            isPTTUserSpeaking={isPTTUserSpeaking}
-            isPTTActive={isPTTActive}
-            isListening={isListening}
+    <div
+      className="relative flex flex-col bg-gray-100 text-base text-gray-800"
+      style={{ height: "100dvh", maxHeight: "100dvh" }}
+    >
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-3 text-lg font-semibold sm:p-5">
+        <div
+          className="flex cursor-pointer items-center"
+          onClick={() => window.location.reload()}
+        >
+          <Image
+            src="/aigoasia_logo.png"
+            alt="Weider Logo"
+            width={40}
+            height={40}
+            className="mr-2"
           />
-        </section>
+          <div>Influencer_KB</div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleMicrophoneClick}
+            className={`relative flex h-12 w-12 animate-pulse items-center justify-center rounded-full font-medium text-white shadow-md transition-all duration-200 ${
+              isPTTActive
+                ? "bg-blue-500 hover:bg-blue-600"
+                : "bg-green-500 hover:bg-green-600"
+            }`}
+            title={
+              isOutputAudioBufferActive
+                ? "點擊打斷 AI 講話"
+                : isPTTActive
+                  ? "點擊切換到持續對話模式"
+                  : "持續對話模式"
+            }
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+            </svg>
+
+            {!isPTTActive && isListening && !isOutputAudioBufferActive && (
+              <div className="absolute -right-1 -top-1">
+                <div className="h-3 w-3 animate-ping rounded-full bg-green-400" />
+                <div className="absolute inset-0 h-3 w-3 rounded-full bg-green-500" />
+              </div>
+            )}
+          </button>
+        </div>
       </div>
-    </main>
+
+      <div className="relative flex min-h-0 flex-1 gap-2 overflow-hidden px-2">
+        <Transcript
+          userText={userText}
+          setUserText={setUserText}
+          onSendMessage={() => sendTextMessage()}
+          downloadRecording={() => undefined}
+          canSend={isConnected}
+          handleTalkButtonDown={handleTalkButtonDown}
+          handleTalkButtonUp={handleTalkButtonUp}
+          isPTTUserSpeaking={isPTTUserSpeaking}
+          isPTTActive={isPTTActive}
+          onRate={handleRating}
+          ratingsByTargetId={ratingsByTargetId}
+        />
+
+        <Events isExpanded={false} />
+      </div>
+    </div>
   );
 }
 
