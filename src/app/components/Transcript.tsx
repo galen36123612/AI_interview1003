@@ -95,6 +95,12 @@ export default function Transcript({
   );
 
   const hasUserMessage = messages.some((item) => item.role === "user");
+  const hasCompletedAssistantMessage = messages.some(
+    (item) =>
+      item.role === "assistant" &&
+      item.status === "DONE" &&
+      Boolean(item.title?.trim())
+  );
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -166,7 +172,7 @@ export default function Transcript({
           );
         })}
 
-        {canSend && !hasUserMessage && messages.length > 0 && (
+        {canSend && !hasUserMessage && hasCompletedAssistantMessage && (
           <div className="mx-auto max-w-2xl pt-2">
             <p className="mb-2 text-center text-xs font-medium text-slate-400">
               或直接選一個練習方向
