@@ -64,6 +64,7 @@ function App() {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const hasWelcomedRef = useRef(false);
   const isOutputActiveRef = useRef(false);
+  const isResponseActiveRef = useRef(false);
 
   useEffect(() => {
     isOutputActiveRef.current = isOutputAudioBufferActive;
@@ -145,12 +146,15 @@ function App() {
   }, [isPTTActive, sendClientEvent]);
 
   const cancelAssistantSpeech = useCallback(() => {
-    if (!isOutputActiveRef.current) return;
-    sendClientEvent({ type: "response.cancel" }, "user interruption");
-    sendClientEvent(
-      { type: "output_audio_buffer.clear" },
-      "clear interrupted audio"
-    );
+    if (isResponseActiveRef.current) {
+      sendClientEvent({ type: "response.cancel" }, "user interruption");
+    }
+    if (isOutputActiveRef.current) {
+      sendClientEvent(
+        { type: "output_audio_buffer.clear" },
+        "clear interrupted audio"
+      );
+    }
   }, [sendClientEvent]);
 
   const stopSession = useCallback(() => {
@@ -169,6 +173,7 @@ function App() {
     }
 
     hasWelcomedRef.current = false;
+    isResponseActiveRef.current = false;
     setIsPTTUserSpeaking(false);
     setIsListening(false);
     setIsOutputAudioBufferActive(false);
@@ -245,6 +250,16 @@ function App() {
         }
 
         if (event.type === "session.updated") sendWelcomeOnce();
+
+        if (event.type === "response.created") {
+          isResponseActiveRef.current = true;
+        }
+        if (
+          event.type === "response.done" ||
+          event.type === "response.completed"
+        ) {
+          isResponseActiveRef.current = false;
+        }
 
         if (event.type === "input_audio_buffer.speech_started") {
           setIsListening(true);
