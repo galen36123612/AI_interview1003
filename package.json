@@ -1,5 +1,5 @@
 {
-  "name": "realtime-examples",
+  "name": "ai-interview-coach",
   "type": "module",
   "version": "0.1.0",
   "private": true,
@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint src/app/App.tsx src/app/agentConfigs/simpleExample.ts src/app/components/Transcript.tsx src/app/hooks/useHandleServerEvent.ts src/app/api/session/route.ts src/app/data/interviewCoachKnowledge.ts src/app/data/interviewCoachScripts.ts src/app/data/interviewCoachDomains.ts --max-warnings=0",
+    "test": "node scripts/validate-interview-coach.mjs",
+    "check": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.2",
