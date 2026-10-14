@@ -16,6 +16,7 @@ interface UseHandleServerEventParams {
   ) => boolean;
   setSelectedAgentName: (name: string) => void;
   setIsOutputAudioBufferActive: (active: boolean) => void;
+  onConfirmedTerm?: (term: { canonical: string; variants: string[] }) => void;
 }
 
 function textFromContent(content: any): string {
@@ -40,6 +41,7 @@ export function useHandleServerEvent({
   sendClientEvent,
   setSelectedAgentName,
   setIsOutputAudioBufferActive,
+  onConfirmedTerm,
 }: UseHandleServerEventParams) {
   const {
     transcriptItems,
@@ -106,6 +108,25 @@ export function useHandleServerEvent({
       );
       if (nextAgent) setSelectedAgentName(nextAgent.name);
       result = { ok: Boolean(nextAgent), destination_agent: destination };
+    }
+
+    if (
+      result &&
+      typeof result === "object" &&
+      "kind" in result &&
+      result.kind === "confirmed_term" &&
+      "canonical" in result &&
+      typeof result.canonical === "string"
+    ) {
+      onConfirmedTerm?.({
+        canonical: result.canonical,
+        variants:
+          "variants" in result && Array.isArray(result.variants)
+            ? result.variants.filter(
+                (variant): variant is string => typeof variant === "string"
+              )
+            : [],
+      });
     }
 
     sendClientEvent(

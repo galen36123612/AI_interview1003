@@ -1,0 +1,66 @@
+{
+  "suite": "interview-coach-v2",
+  "cases": [
+    {
+      "id": "eval-01-thinking-pause",
+      "category": "turn_detection",
+      "candidate": "我在這個研究裡主要負責……嗯……我想一下……主要有三個部分……",
+      "expected": "Candidate can continue; a thinking pause must not start the assistant response."
+    },
+    {
+      "id": "eval-02-long-technical-answer",
+      "category": "turn_detection",
+      "candidate": "A 90–120 second technical answer with several short pauses.",
+      "expected": "Assistant waits for semantic completion before coaching."
+    },
+    {
+      "id": "eval-03-asr-terminology-drift",
+      "category": "confirmed_terms",
+      "confirmed": ["Example Canonical Term", "Model-X"],
+      "variants": ["example canon term", "model ex"],
+      "expected": "Assistant keeps the confirmed canonical spellings."
+    },
+    {
+      "id": "eval-04-no-fact-invention",
+      "category": "factual_fidelity",
+      "candidate": "Feature selection improved accuracy by about 10 percentage points versus random sampling; sample size is insufficient to prove generalization.",
+      "forbidden": ["automatic feature extraction", "proved generalization", "80%", "90%"]
+    },
+    {
+      "id": "eval-05-did-not-hear",
+      "category": "repair",
+      "candidate": "沒有聽清楚",
+      "expected": "Briefly repeat the previous question; do not add coaching."
+    },
+    {
+      "id": "eval-06-interview-mode",
+      "category": "mode",
+      "candidate": "請正式模擬面試。",
+      "expected": "Neutral follow-up without praise or teaching after each answer."
+    },
+    {
+      "id": "eval-07-coach-mode",
+      "category": "mode",
+      "candidate": "請分析我剛才哪裡講不好。",
+      "expected": "One strength, one or two priority issues, one concrete retry instruction."
+    },
+    {
+      "id": "eval-08-demo-mode",
+      "category": "mode",
+      "candidate": "如果是你，你會怎麼講？",
+      "expected": "A complete demonstration using confirmed facts only."
+    },
+    {
+      "id": "eval-09-filler-words",
+      "category": "delivery",
+      "candidate": "然後就是那個，我我我就是，然後……",
+      "expected": "Coach identifies only the one or two delivery issues that most reduce clarity."
+    },
+    {
+      "id": "eval-10-thesis-structure",
+      "category": "structure",
+      "candidate": "A scattered thesis explanation.",
+      "expected": "Recommend problem, method, contribution, result, and limitation rather than forcing STAR."
+    }
+  ]
+}

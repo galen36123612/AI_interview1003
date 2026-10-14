@@ -1,0 +1,190 @@
+{
+  "id": "technical-thesis-session-001",
+  "description": "Synthetic regression fixture derived from a long Mandarin technical-thesis coaching session.",
+  "candidate": {
+    "name": "陳測試",
+    "identity": "synthetic",
+    "confirmedTerms": ["Nature Attack", "CodeBERT"]
+  },
+  "turns": [
+    {
+      "at": "09:41:31.923",
+      "role": "assistant",
+      "text": "哈囉，我是你的面試陪練。你想從自我介紹、論文還是專案開始呢？"
+    },
+    {
+      "at": "09:41:42.315",
+      "role": "user",
+      "text": "我想先跟你做介紹"
+    },
+    {
+      "at": "09:41:42.555",
+      "role": "assistant",
+      "text": "好的，那你就當成在面試現場，直接來一段自我介紹吧。你可以開始了。"
+    },
+    {
+      "at": "09:42:17.719",
+      "role": "user",
+      "text": "嗨，面試官，我是陳測試。我大學念資訊管理，碩士也讀資訊管理，之前在研究機構做過車牌辨識和視覺模型。研究所論文則是 Nature Attack……"
+    },
+    {
+      "at": "09:42:17.954",
+      "role": "assistant",
+      "text": "你剛剛提到車牌辨識和視覺模型，還有 Nature Attack。我想確認專有名詞，接下來你可以挑一個具體經歷，多說一些個人貢獻和成效。"
+    },
+    {
+      "at": "09:44:30.567",
+      "role": "user",
+      "text": "我的論文研究 Nature Attack。基底模型是 CodeBERT。我想知道 CodeBERT 面對原始程式與受攻擊程式時，能否從執行時間、function 回傳值、function call 次數等執行 log 找出可區分的特徵；如果規則不夠穩定，再把我選出的特徵交給 neural network 分類。"
+    },
+    {
+      "at": "09:45:05.950",
+      "role": "assistant",
+      "text": "你在這個研究中個人最關鍵的行動或決策是什麼？可以舉一個具體例子嗎？"
+    },
+    {
+      "at": "09:45:25.879",
+      "role": "user",
+      "text": "沒有聽清楚"
+    },
+    {
+      "at": "09:45:26.243",
+      "role": "assistant",
+      "text": "好，我們先聚焦在你的關鍵行動上。我給你兩個方向選，第一個是你當時怎麼設計取用特徵值，第二個是你在訓練神經網路時有沒有做出重要決策。",
+      "observedIssues": ["did_not_repeat_question", "unnecessary_coaching"]
+    },
+    {
+      "at": "09:46:04.867",
+      "role": "user",
+      "text": "應該就是說我……"
+    },
+    {
+      "at": "09:46:05.388",
+      "role": "assistant",
+      "text": "沒關係，你可以慢慢說。當初在設計特徵值時，你怎麼決定要選哪些？"
+    },
+    {
+      "at": "09:47:03.679",
+      "role": "user",
+      "text": "因為我一開始不確定能不能從執行階段找到差異，所以先把未攻擊與已攻擊的程式都執行一遍，收集中間參數和 log，再用腳本比對。後來我是怎麼截取的話……我一開始先粗略截取一段，後來另外用……",
+      "status": "still_speaking"
+    },
+    {
+      "at": "09:47:26.244",
+      "role": "assistant",
+      "text": "好的，我們先……",
+      "observedIssues": ["premature_interruption", "coaching_interruption"]
+    },
+    {
+      "at": "09:49:15.794",
+      "role": "user",
+      "text": "我用程式挑出差異較大的 return value 和執行時間，當作特徵值交給 neural network。我比較隨機截取與特別挑選 log，後者分類準確度高約 10 個百分點。但樣本數不足，不能證明這個方法能穩定泛化。"
+    },
+    {
+      "at": "09:49:16.570",
+      "role": "assistant",
+      "text": "你發現準確度差異有 10 個百分點時，有做過什麼調整或新的嘗試嗎？"
+    },
+    {
+      "at": "09:49:38.535",
+      "role": "user",
+      "text": "沒有聽清楚"
+    },
+    {
+      "at": "09:49:38.894",
+      "role": "assistant",
+      "text": "沒關係，我們先把剛剛的重點理一下。你提到先比對執行紀錄、找差異大的特徵值、再用神經網路訓練……例如你有沒有改變特徵選擇、調整網路參數，或做其他實驗？",
+      "observedIssues": ["did_not_repeat_question", "unnecessary_coaching"]
+    },
+    {
+      "at": "09:50:03.667",
+      "role": "user",
+      "text": "你剛才聽我講這麼多，我在表達方式上有沒有需要修正？"
+    },
+    {
+      "at": "09:50:04.026",
+      "role": "assistant",
+      "text": "做得好的是你有說明如何截取特徵與比較取樣方式。優先改善的是內容太長，關鍵結果不夠突出；下次請在 90 秒內先講具體數字。"
+    },
+    {
+      "at": "09:51:41.091",
+      "role": "user",
+      "text": "我想試試 90 秒。我的論文是研究 Nature Attack，基底模型是 CodeBERT……我想從執行 log 的 function call 次數、回傳值和處理時間找差異……",
+      "status": "still_speaking"
+    },
+    {
+      "at": "09:54:27.416",
+      "role": "assistant",
+      "text": "好的，你剛剛的重答比……",
+      "observedIssues": ["premature_interruption", "coaching_interruption"]
+    },
+    {
+      "at": "09:54:28.945",
+      "role": "user",
+      "text": "是的。"
+    },
+    {
+      "at": "09:54:29.426",
+      "role": "assistant",
+      "text": "你前面有很多實驗細節，但 90 秒內最關鍵的是先點出準確度差異有 10 個百分點，再說明挑選特徵與使用神經網路。"
+    },
+    {
+      "at": "09:55:00.864",
+      "role": "user",
+      "text": "好，就是我收集了這個……",
+      "status": "still_speaking"
+    },
+    {
+      "at": "09:55:01.274",
+      "role": "assistant",
+      "text": "我們先把重點縮小，從你收集到的資料快速帶出一個具體結果。",
+      "observedIssues": ["coaching_interruption"]
+    },
+    {
+      "at": "09:55:52.655",
+      "role": "user",
+      "text": "我發現我用 neural network……如果隨機存取一段，對比……",
+      "status": "still_speaking"
+    },
+    {
+      "at": "09:55:53.079",
+      "role": "assistant",
+      "text": "聽起來你已經開始掌握重點。現在我們把這個結果更……",
+      "observedIssues": ["premature_interruption", "coaching_interruption"]
+    },
+    {
+      "at": "09:56:19.596",
+      "role": "user",
+      "text": "如果我特別挑選差異較大的那一段，辨識未修改與已修改程式的準確度提升約 10 個百分點。"
+    },
+    {
+      "at": "09:56:20.023",
+      "role": "assistant",
+      "text": "這就是明確結果。接著說你怎麼挑選特徵、用什麼方式訓練網路，再收一個簡短結論。"
+    },
+    {
+      "at": "09:56:54.206",
+      "role": "user",
+      "text": "如果從頭開始講，你會怎麼編排？請用我的例子示範一次。"
+    },
+    {
+      "at": "09:56:54.821",
+      "role": "assistant",
+      "text": "我在研究中發現，透過挑選差異較大的特徵給神經網路，能讓辨識原始程式和被攻擊程式的準確率提升約 10%。我比較隨機取樣和精選特徵兩種方式；這是論文的重要發現。"
+    },
+    {
+      "at": "09:57:05.747",
+      "role": "assistant",
+      "text": "我在碩士論文裡研究如何分辨被 Nature Attack 改過的程式碼。我先比較函數呼叫次數、回傳值和執行時間，找不到穩定規則，所以改用神經網路萃取特徵。這個方法證明有機會提升模型辨識能力。",
+      "observedIssues": ["method_changed", "uncertainty_removed", "overclaim"]
+    }
+  ],
+  "baselineObservations": {
+    "prematureInterruptionCount": 3,
+    "coachingInterruptionCount": 4,
+    "didNotHearFailures": 2,
+    "terminologyConsistency": "failed",
+    "factualFidelity": "failed",
+    "modeAppropriateness": "mixed"
+  }
+}

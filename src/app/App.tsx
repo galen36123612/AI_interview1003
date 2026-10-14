@@ -10,9 +10,20 @@ import { INTERVIEW_WELCOME_INSTRUCTION } from "@/app/data/interviewCoachKnowledg
 import { useEvent } from "@/app/contexts/EventContext";
 import { useHandleServerEvent } from "./hooks/useHandleServerEvent";
 import { SessionStatus } from "@/app/types";
+import {
+  formatConfirmedTerms,
+  mergeConfirmedTerm,
+  transcriptionPromptForConfirmedTerms,
+} from "@/app/lib/confirmedTerms.mjs";
+import { createRealtimeMetricsTracker } from "@/app/lib/realtimeMetrics.mjs";
 
 const agentSet = allAgentSets[defaultAgentSetKey];
 const interviewCoach = agentSet[0];
+
+type ConfirmedTerm = {
+  canonical: string;
+  variants: string[];
+};
 
 function App() {
   const { logClientEvent, logServerEvent } = useEvent();
@@ -32,6 +43,7 @@ function App() {
   const [ratingsByTargetId, setRatingsByTargetId] = useState<
     Record<string, number>
   >({});
+  const [confirmedTerms, setConfirmedTerms] = useState<ConfirmedTerm[]>([]);
 
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -40,6 +52,7 @@ function App() {
   const hasWelcomedRef = useRef(false);
   const isOutputActiveRef = useRef(false);
   const isResponseActiveRef = useRef(false);
+  const realtimeMetricsRef = useRef(createRealtimeMetricsTracker());
 
   useEffect(() => {
     isOutputActiveRef.current = isOutputAudioBufferActive;
@@ -51,11 +64,18 @@ function App() {
       if (!channel || channel.readyState !== "open") return false;
 
       logClientEvent(event, label);
+      for (const metric of realtimeMetricsRef.current.handleClientEvent(event)) {
+        logClientEvent(metric, metric.name);
+      }
       channel.send(JSON.stringify(event));
       return true;
     },
     [logClientEvent]
   );
+
+  const rememberConfirmedTerm = useCallback((term: ConfirmedTerm) => {
+    setConfirmedTerms((current) => mergeConfirmedTerm(current, term));
+  }, []);
 
   const handleServerEventRef = useHandleServerEvent({
     setSessionStatus,
@@ -64,6 +84,7 @@ function App() {
     sendClientEvent,
     setSelectedAgentName,
     setIsOutputAudioBufferActive,
+    onConfirmedTerm: rememberConfirmedTerm,
   });
 
   const sendWelcomeOnce = useCallback(() => {
@@ -86,20 +107,24 @@ function App() {
     const turnDetection = isPTTActive
       ? null
       : {
-          type: "server_vad",
-          threshold: 0.62,
-          prefix_padding_ms: 450,
-          silence_duration_ms: 900,
+          type: "semantic_vad",
+          eagerness: "low",
           create_response: true,
           interrupt_response: true,
         };
+
+    const confirmedTermContext = formatConfirmedTerms(confirmedTerms);
+    const transcriptionPrompt =
+      transcriptionPromptForConfirmedTerms(confirmedTerms);
 
     sendClientEvent(
       {
         type: "session.update",
         session: {
           type: "realtime",
-          instructions: interviewCoach.instructions,
+          instructions: [interviewCoach.instructions, confirmedTermContext]
+            .filter(Boolean)
+            .join("\n\n"),
           output_modalities: ["audio"],
           audio: {
             input: {
@@ -107,6 +132,9 @@ function App() {
               transcription: {
                 model: "gpt-4o-mini-transcribe",
                 language: "zh",
+                ...(transcriptionPrompt
+                  ? { prompt: transcriptionPrompt }
+                  : {}),
               },
               turn_detection: turnDetection,
             },
@@ -118,7 +146,7 @@ function App() {
       },
       "interview coach configuration"
     );
-  }, [isPTTActive, sendClientEvent]);
+  }, [confirmedTerms, isPTTActive, sendClientEvent]);
 
   const cancelAssistantSpeech = useCallback(() => {
     if (isResponseActiveRef.current) {
@@ -149,6 +177,7 @@ function App() {
 
     hasWelcomedRef.current = false;
     isResponseActiveRef.current = false;
+    realtimeMetricsRef.current.reset();
     setIsPTTUserSpeaking(false);
     setIsListening(false);
     setIsOutputAudioBufferActive(false);
@@ -224,6 +253,10 @@ function App() {
           return;
         }
 
+        for (const metric of realtimeMetricsRef.current.handleServerEvent(event)) {
+          logServerEvent(metric, metric.name);
+        }
+
         if (event.type === "session.updated") sendWelcomeOnce();
 
         if (event.type === "response.created") {
@@ -238,7 +271,12 @@ function App() {
 
         if (event.type === "input_audio_buffer.speech_started") {
           setIsListening(true);
-          cancelAssistantSpeech();
+          if (isOutputActiveRef.current) {
+            sendClientEvent(
+              { type: "output_audio_buffer.clear" },
+              "clear audio after server-managed interruption"
+            );
+          }
         }
 
         if (

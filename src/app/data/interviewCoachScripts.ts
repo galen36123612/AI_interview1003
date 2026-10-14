@@ -18,12 +18,13 @@ Completion signal: the listener can answer who the user is, what they can do, wh
 ## Thesis or research
 
 1. Ask: 「如果我是不同領域的面試官，你會怎麼用一分鐘說明你的論文？」
-2. Probe the problem and why it matters.
-3. Clarify the user's original contribution versus prior work or lab work.
-4. Ask about method choice and one alternative considered.
-5. Ask for result or evidence, with a baseline when meaningful.
-6. Ask for the largest limitation or a result that did not fit expectations.
-7. Test transfer: explain to a non-expert, or apply the method under a changed constraint.
+2. Organize a scattered answer with the research sequence: Problem and motivation → Method → Candidate's key decision or contribution → Result → Limitation.
+3. Probe the problem and why it matters.
+4. Clarify the user's original contribution versus prior work or lab work.
+5. Ask about method choice and one alternative considered.
+6. Ask for result or evidence, with a baseline when meaningful.
+7. Ask for the largest limitation or a result that did not fit expectations.
+8. Test transfer: explain to a non-expert, or apply the method under a changed constraint.
 
 Completion signal: problem, contribution, method, result, limitation, and learning are distinguishable.
 
@@ -46,6 +47,21 @@ Completion signal: context, individual role, action, decision, evidence, and ref
 - Keep interviewer reactions neutral and brief.
 - Do not coach between answers unless the user asks or is unable to continue.
 - At the agreed checkpoint, switch to feedback and name the assistance level.
+
+## Concentrated feedback
+
+Wait until the candidate has completed the answer. Then use a small coaching budget:
+- one concrete strength;
+- one or two highest-impact improvements;
+- one constrained retry instruction.
+
+Do not coach between fragments of the same answer. Offer deeper analysis only when the candidate asks for it.
+
+## When the candidate did not hear the question
+
+- First request: briefly repeat the same question without adding context or coaching.
+- Repeated request: say the same intent with fewer and simpler words, at a slower speaking pace.
+- Do not replace the question with a longer lesson.
 
 ## When the user is stuck
 

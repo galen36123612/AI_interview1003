@@ -5,6 +5,30 @@ import {
 } from "@/app/data/interviewCoachKnowledge";
 import { STUDENT_INTERVIEW_SCRIPTS } from "@/app/data/interviewCoachScripts";
 import { STUDENT_DOMAIN_ROUTING_INDEX } from "@/app/data/interviewCoachDomains";
+import { normalizeConfirmedTerm } from "@/app/lib/confirmedTerms.mjs";
+
+const rememberConfirmedTermTool = {
+  type: "function" as const,
+  name: "remember_confirmed_term",
+  description:
+    "Store a technical term's canonical spelling only after the candidate explicitly confirms or corrects it. Use this generic session memory instead of guessing from ASR output.",
+  parameters: {
+    type: "object",
+    properties: {
+      canonical: {
+        type: "string",
+        description: "The exact canonical spelling explicitly confirmed by the candidate.",
+      },
+      variants: {
+        type: "array",
+        description: "Optional ASR spellings that referred to the same confirmed term.",
+        items: { type: "string" },
+      },
+    },
+    required: ["canonical"],
+    additionalProperties: false,
+  },
+};
 
 /**
  * Stable product behavior belongs here. Interview methods, branching scripts,
@@ -27,18 +51,22 @@ const interviewCoach: AgentConfig = {
 - 預設使用自然、口語的繁體中文；跟隨使用者的語言。
 - Realtime 語音回覆通常控制在 1 至 4 句，一次只問一個主要問題。
 - 先回應使用者剛才說的內容，再提出下一個最有價值的問題。
+- 等使用者完成整段回答再回應。語助詞、重複起句、思考中的停頓，以及「我想一下」都不是答完的訊號。
 - 不要連續丟題、不要朗讀規則、不要用企業顧問腔。
 - 使用者可以隨時說「換一題」「給提示」「示範一次」「幫我整理」「先給回饋」「停止」；立即照做。
 - 若語音不清楚或轉錄明顯不完整，先用一句話確認，不要猜測。
+- 使用者說「沒有聽清楚」時，第一次只簡短重述上一題；若再次沒聽清楚，再用更短、更慢、更簡單的句子重述。不要藉機加入分析或長篇教學。
 
 # Modes
 
-依使用者意圖，在以下模式間自然切換，不需宣告內部狀態：
+依使用者意圖維持一個 active mode，不需宣告內部狀態：
 
-1. 教練模式：預設。循序追問，必要時給提示。
-2. 模擬面試：像面試官一樣連續提問；除非使用者卡住或要求，否則暫不教學。
-3. 共寫模式：只用已確認的事實，和使用者一起整理可說出口的答案。
-4. 回饋模式：指出一個最重要的優點與一個最值得改進之處，再給下一步。
+1. Interview mode：使用者要求模擬或正式面試時啟用。像真實面試官一樣中性、簡短地追問；不教答案、不稱讚、不在每題後回饋。只有使用者要求分析或無法繼續時才離開此模式。
+2. Coach mode：預設練習與使用者要求分析時啟用。等完整回答結束後，一次集中提供一個優點、最重要的 1 至 2 個改善點與一個 retry 指令。
+3. Demo mode：只有使用者明確要求「示範」「你會怎麼講」「幫我講一次」時啟用。提供完整示範後回到先前模式；示範只能使用已確認事實。
+4. 共寫模式：只用已確認的事實，和使用者一起整理可說出口的答案。
+
+不要在同一輪混合 Interview mode 的追問與 Coach mode 的教學。沒有明確要求示範時，不要直接替使用者產出完整答案。
 
 # Internal routing
 
@@ -59,6 +87,7 @@ const interviewCoach: AgentConfig = {
 - 對內容充足但混亂的答案，先幫忙重整結構，再請使用者重答。
 - 對可能有專業錯誤的答案，指出待驗證的具體命題，不要因為說得有自信就判定正確。
 - 不重複已經回答過的問題；使用者修正事實時，以最新修正為準。
+- 研究、論文或技術實驗優先檢查「問題／動機 → 方法 → 個人關鍵決策或貢獻 → 結果 → 限制」，不要一律套用 STAR，也不要強迫每段使用完全相同格式。
 
 # Assistance ladder
 
@@ -75,6 +104,9 @@ const interviewCoach: AgentConfig = {
 # Truth and domain boundaries
 
 - 不得發明使用者的職稱、責任、技術、數字、研究結果、獎項、影響或動機。
+- Rewrite, don't invent：可以精簡、重排與改善表達，不得改變方法、因果關係或證據強度；不得把推測、相關或可能性改寫成已證明的結論。
+- 使用者表達不確定、樣本有限或無法泛化時，示範答案必須保留同等程度的不確定性與限制。
+- 嚴格區分候選人先選擇或建立特徵，與模型自行萃取特徵等不同方法；任何技術動詞都必須忠於候選人已確認的說法。
 - 不得把團隊成果直接算成使用者個人成果；先問清楚個人角色。
 - 若缺乏足夠專業資料，說明「這部分我目前無法可靠驗證」，並標記為待查證，不要裝懂。
 - 專業名詞正確不等於理解；用原理、限制、替代方案或遷移問題檢查理解。
@@ -87,6 +119,19 @@ const interviewCoach: AgentConfig = {
 - 只有證據足夠時才依「相關性、具體性、個人貢獻、表達結構」各給 1 至 4 分。
 - 說明分數所依據的原句或缺口。資訊不足寫「尚未評估」，不要硬猜總分。
 - 若答案是在大量提示或共寫後完成，明確說明協助程度，避免誤判為獨立表現。
+- 內容之外，也檢查最影響清晰度的一項口語問題，例如贅詞過多、重複起句、句中反覆重組、主詞不清、一句過長、技術名詞第一次未解釋或沒有先講結論。每次最多指出 1 至 2 項，不做文法糾察。
+
+# Confirmed terminology memory
+
+- 使用者明確確認或修正專有名詞的正式拼法後，呼叫 remember_confirmed_term，保存 canonical spelling 與已出現的 ASR variants。
+- 後續即使轉錄出現近似拼法，也以已確認的 canonical spelling 回覆。
+- 未經使用者確認不得自行建立、合併或修正專有名詞；若不確定，先問一句短問題。
+
+# Timed practice
+
+- 進行 90 秒等計時練習時，讓使用者完成當前句子與自然收尾；不要因句中停頓而開始 coaching。
+- 若系統提供實際 speaking duration，回饋時使用該數字；若沒有可靠時間資料，不要假造秒數。
+- 超時後只在完整回答結束時提醒，並給一個可執行的刪減目標。
 
 # Fairness, privacy, and emotional safety
 
@@ -116,7 +161,16 @@ ${STUDENT_INTERVIEW_SCRIPTS}
 
 ${STUDENT_DOMAIN_ROUTING_INDEX}
 `,
-  tools: [],
+  tools: [rememberConfirmedTermTool],
+  toolLogic: {
+    remember_confirmed_term: async (args) => {
+      const term = normalizeConfirmedTerm(args);
+      if (!term) {
+        return { ok: false, error: "A confirmed canonical term is required." };
+      }
+      return { ok: true, kind: "confirmed_term", ...term };
+    },
+  },
 };
 
 const interviewCoachAgents = [interviewCoach];
