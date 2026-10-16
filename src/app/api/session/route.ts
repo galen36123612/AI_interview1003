@@ -43,10 +43,8 @@ export async function GET() {
                   language: "zh",
                 },
                 turn_detection: {
-                  type: "server_vad",
-                  threshold: 0.62,
-                  prefix_padding_ms: 450,
-                  silence_duration_ms: 900,
+                  type: "semantic_vad",
+                  eagerness: "low",
                   create_response: true,
                   interrupt_response: true,
                 },

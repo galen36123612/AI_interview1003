@@ -7,8 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src/app/App.tsx src/app/agentConfigs/simpleExample.ts src/app/components/Transcript.tsx src/app/contexts/EventContext.tsx src/app/hooks/useHandleServerEvent.ts src/app/api/session/route.ts src/app/data/interviewCoachKnowledge.ts src/app/data/interviewCoachScripts.ts src/app/data/interviewCoachDomains.ts --max-warnings=0",
-    "test": "node scripts/validate-interview-coach.mjs",
+    "lint": "eslint src/app/App.tsx src/app/agentConfigs/simpleExample.ts src/app/components/Transcript.tsx src/app/contexts/EventContext.tsx src/app/hooks/useHandleServerEvent.ts src/app/api/session/route.ts src/app/data/interviewCoachKnowledge.ts src/app/data/interviewCoachScripts.ts src/app/data/interviewCoachDomains.ts src/app/lib/confirmedTerms.mjs src/app/lib/realtimeMetrics.mjs scripts/evaluate-interview-coach-v2.mjs --max-warnings=0",
+    "test": "node scripts/validate-interview-coach.mjs && node scripts/evaluate-interview-coach-v2.mjs",
+    "test:eval": "node scripts/evaluate-interview-coach-v2.mjs",
     "check": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {
