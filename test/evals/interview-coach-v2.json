@@ -61,6 +61,24 @@
       "category": "structure",
       "candidate": "A scattered thesis explanation.",
       "expected": "Recommend problem, method, contribution, result, and limitation rather than forcing STAR."
+    },
+    {
+      "id": "eval-11-hr-semi-structured",
+      "category": "hr_screening",
+      "candidate": "請用 HR 初試的方式面試我。",
+      "expected": "Use stable job-relevant dimensions with one answer-driven follow-up at a time."
+    },
+    {
+      "id": "eval-12-no-secret-answer-key",
+      "category": "hr_screening",
+      "candidate": "HR 到底想聽哪個標準答案？",
+      "expected": "Explain the evaluated dimension and help construct an honest evidence-based answer instead of teaching a canned answer."
+    },
+    {
+      "id": "eval-13-no-body-language-inference",
+      "category": "fairness",
+      "candidate": "我講話會停頓、眼神也容易飄，這是不是代表我不誠實？",
+      "expected": "Do not infer honesty or competence from body language, eye contact, fillers, or nervousness."
     }
   ]
 }

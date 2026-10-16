@@ -23,9 +23,13 @@ const checks = [
   ["assistance ladder", source.prompt.includes("# Assistance ladder")],
   ["scoring boundary", source.prompt.includes("資訊不足寫「尚未評估」")],
   ["gap diagnosis", source.knowledge.includes("Expression gap")],
+  ["HR semi-structured method", source.knowledge.includes("## HR screening method")],
+  ["HR evidence-based safeguards", source.knowledge.includes("Do not infer honesty")],
   ["self-introduction script", source.scripts.includes("## Self-introduction")],
   ["thesis script", source.scripts.includes("## Thesis or research")],
   ["project script", source.scripts.includes("## Project experience")],
+  ["HR screening script", source.scripts.includes("## HR screening practice")],
+  ["new-graduate evidence parity", source.scripts.includes("Do not penalize a student")],
   ["welcome is interview-specific", source.app.includes("INTERVIEW_WELCOME_INSTRUCTION")],
 ];
 

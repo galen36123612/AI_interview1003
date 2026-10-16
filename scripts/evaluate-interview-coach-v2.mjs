@@ -20,6 +20,7 @@ const readBaseline = (path) =>
 const [
   prompt,
   scripts,
+  knowledge,
   app,
   sessionRoute,
   fixtureRaw,
@@ -28,6 +29,7 @@ const [
 ] = await Promise.all([
   read("src/app/agentConfigs/simpleExample.ts"),
   read("src/app/data/interviewCoachScripts.ts"),
+  read("src/app/data/interviewCoachKnowledge.ts"),
   read("src/app/App.tsx"),
   read("src/app/api/session/route.ts"),
   read("test/fixtures/interview-coach/technical-thesis-session-001.json"),
@@ -140,6 +142,25 @@ const tests = [
       scripts.includes("Problem and motivation → Method"),
   },
   {
+    id: "eval-11-hr-semi-structured",
+    pass:
+      knowledge.includes("## HR screening method") &&
+      scripts.includes("## HR screening practice") &&
+      scripts.includes("Keep the core dimensions stable"),
+  },
+  {
+    id: "eval-12-no-secret-answer-key",
+    pass:
+      knowledge.includes("Do not score against one canned") &&
+      scripts.includes("Do not search for a secret answer key"),
+  },
+  {
+    id: "eval-13-no-body-language-inference",
+    pass:
+      knowledge.includes("Do not infer honesty, personality, motivation, competence") &&
+      knowledge.includes("body language, eye contact, posture, handshake"),
+  },
+  {
     id: "realtime-metrics-instrumentation",
     pass:
       metricEvents.some((event) => event.name === "total_answer_duration") &&
@@ -150,7 +171,7 @@ const tests = [
 ];
 
 const definedEvalIds = new Set(evalSpec.cases.map((testCase) => testCase.id));
-for (const test of tests.slice(0, 10)) {
+for (const test of tests.filter(({ id }) => id.startsWith("eval-"))) {
   if (!definedEvalIds.has(test.id)) test.pass = false;
 }
 

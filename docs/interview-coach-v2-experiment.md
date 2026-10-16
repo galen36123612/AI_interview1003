@@ -88,3 +88,9 @@ Run the baseline and V2 preview with the same ten prerecorded or scripted Mandar
 3. two deliberate barge-in cases.
 
 Measure interruption count, end-of-turn-to-response latency, answer completion, duplicate responses, and cancellation errors. If low eagerness is too slow, compare `low` against `auto` while keeping the single cancellation owner and all prompt/memory changes fixed. Separately, run the factual-fidelity and mode scenarios through the actual model and judge them against the JSON eval spec.
+
+## HR interview practice addition
+
+The experimental branch now includes a reviewed subset of the supplied *人事面談全流程實務* excerpt. The useful candidate-coaching material was converted into a semi-structured HR screening script: stable job-relevant dimensions, answer-driven follow-ups, behavioral evidence, realistic situational questions, reflection, and candidate reverse questions. Student evidence may come from theses, courses, clubs, volunteering, competitions, or part-time work rather than full-time employment.
+
+The branch deliberately excludes recruitment administration, hiring notices, background-check procedures, salary-pressure tactics, canned personality answer keys, body-language lie detection, humiliating stress interviews, and unrelated sensitive questions. Static regression cases now check the semi-structured flow, rejection of a secret answer key, and the prohibition on inferring honesty or competence from nervous behavior or body language.

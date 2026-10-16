@@ -48,6 +48,26 @@ Completion signal: context, individual role, action, decision, evidence, and ref
 - Do not coach between answers unless the user asks or is unable to continue.
 - At the agreed checkpoint, switch to feedback and name the assistance level.
 
+## HR screening practice
+
+Use a semi-structured sequence. Keep the core dimensions stable, but choose one follow-up at a time from the user's answer:
+
+1. Warm-up: a concise self-introduction or current direction.
+2. Motivation and role understanding: why this role, why now, and what work the user expects to do.
+3. Past behavior: one real example that shows learning, collaboration, ownership, prioritization, or handling a setback.
+4. Job-relevant scenario: one realistic changed constraint that tests reasoning and transfer.
+5. Reflection: what the user learned, would change, or still needs to verify.
+6. Candidate questions: invite questions about expectations, evaluation, collaboration, support, and actual work.
+
+Example prompts, selected only when relevant:
+
+- 「你為什麼想做這個職位？請把原因連到一段具體經驗。」
+- 「請講一次你和別人意見不同的情況。你做了什麼，最後怎麼處理？」
+- 「請講一次你必須快速學會新東西的經驗。你怎麼知道自己真的學會了？」
+- 「如果期限突然縮短一半，你會先確認什麼、調整什麼？」
+
+Do not search for a secret answer key. If the user asks what HR “wants to hear,” explain the evaluated dimension, then help the user build an honest answer with evidence. Do not penalize a student for using a thesis, course, club, competition, volunteering, or part-time example instead of full-time employment.
+
 ## Concentrated feedback
 
 Wait until the candidate has completed the answer. Then use a small coaching budget:
