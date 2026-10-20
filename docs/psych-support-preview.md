@@ -6,12 +6,12 @@ This PR branch replaces the entire application persona with psychological suppor
 
 The user's follow-up authorizes a PR, Vercel Preview, and live Realtime testing. This expands the previous offline-only Phase 1 task; it does not approve any source corpus for release or retrieval.
 
-The deployed variant is **A: original prompt direction + safeguards**. It does not invoke the offline Router, infer a validated safety level, retrieve ESConv/ED examples, use embeddings, or contact a human helper. These limits are documented here; the interface identifies the research prototype. The real clinical/privacy/license review blockers remain open.
+The deployed variant is **A: original prompt direction + safeguards**. It does not invoke the offline Router, infer a validated safety level, retrieve ESConv/ED examples, use embeddings, or contact a human helper. These limits are documented here; the prompt identifies the research prototype. The real clinical/privacy/license review blockers remain open.
 
 ## Files and data
 
 - `src/app/psych-support/`: client interface, transcript reducer, fixed server instructions and session adapter.
-- `src/app/api/session/route.ts`: canonical readiness GET and consent-gated, same-origin SDP POST.
+- `src/app/api/session/route.ts`: canonical readiness GET and user-initiated, same-origin SDP POST.
 - `src/app/agentConfigs/psychologicalSupport.ts`: only default persona, using the same instructions as the server.
 - `src/app/components/Transcript.tsx`: original chat UI, now receiving local messages directly instead of a logging context.
 - `research/psych-support/`: Phase 1 source, schemas, synthetic fixtures and reference design documents. No raw corpus or sample-card dialogue is included in Git.
@@ -21,11 +21,11 @@ Original behavioral principles are retained: natural Traditional Chinese; human-
 
 ## Connection and privacy behavior
 
-Users explicitly acknowledge transmission to OpenAI before connecting. Voice mode requests microphone permission; text mode establishes a receive-only audio connection without a microphone. Both support typed messages. The server forwards SDP and fixed session configuration through the [official unified WebRTC flow](https://developers.openai.com/api/docs/guides/voice-webrtc); the browser receives SDP, never the standard OpenAI API key. Audio and typed content go directly to OpenAI through WebRTC.
+The separate notice/checkbox/control strip is removed at the user’s request. Clicking the header microphone starts voice mode and requests microphone permission. Sending text while disconnected starts a receive-only audio connection without a microphone and queues that first message until connected. Both modes support typed messages. This prototype sends audio and text to OpenAI; use fictional situations. The connection-intent header records an explicit UI action, not consent acceptance. The server forwards SDP and fixed session configuration through the [official unified WebRTC flow](https://developers.openai.com/api/docs/guides/voice-webrtc); the browser receives SDP, never the standard OpenAI API key. Audio and typed content go directly to OpenAI through WebRTC.
 
 The homepage does not use the existing event/transcript logging providers, persistence APIs, Blob storage or download utilities. Transcript text is kept in React tab memory, not application backend logs or a database. This does not make a claim about OpenAI's API data processing/retention. Test with fictional situations.
 
-Closing, clearing, cancellation during connection, failure and the ten-minute limit release local audio tracks and the peer connection. Reconnecting starts a new session. Microphone mute, stop assistant audio, playback retry and clear transcript controls are available.
+Click the status text next to the microphone to end/cancel a connection. Click the title/logo to end and clear the conversation. During voice mode, clicking the microphone interrupts assistant speech or switches continuous/push-to-talk input. Playback-blocked and connection-error messages appear in the same compact status text, with details in its tooltip. Closing, clearing, cancellation, failure and the ten-minute limit release local audio tracks and the peer connection. Reconnecting starts a new session.
 
 `OPENAI_API_KEY` must be configured for **Preview** on the existing Vercel project. GET `/api/session` checks configuration without making a paid model call. Never expose the key as a NEXT_PUBLIC variable. No key or upstream response payload is logged by the new endpoint.
 
@@ -46,8 +46,8 @@ Local HTTP smoke checks cover the psychological homepage, compatibility redirect
 
 ## Suggested live checks
 
-1. Start text mode without a microphone. Confirm the welcome, send a fictional positive event, then end and clear.
-2. Start voice mode. Describe a fictional situation with pauses; test mute, barge-in, stop speaking and reconnect.
+1. Send text from the disconnected homepage without a microphone. Confirm the welcome, send a fictional positive event, then end and clear.
+2. Click the microphone to start voice mode. Describe a fictional situation with pauses; test push-to-talk, barge-in, stop speaking, ending through the status text, and reconnecting.
 3. Ask to be heard without advice; ask separately for specific wording. Check whether style follows the request.
 4. In fictional safety scenarios, check that the assistant prioritizes immediate safety, does not claim a risk diagnosis or completed human handoff, and does not invent resource numbers.
 

@@ -8,7 +8,7 @@ import { applyTranscriptEvent } from "../src/app/psych-support/transcript.mjs";
 const SDP = "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n";
 const request = (headers = {}, body = SDP) => new Request("https://preview.example/api/session", {
   method: "POST", headers: { origin: "https://preview.example", "content-type": "application/sdp",
-    "x-psych-preview-consent": "1", ...headers }, body,
+    "x-psych-preview-connect": "1", ...headers }, body,
 });
 
 test("session is isolated prompt-only gpt-realtime with no corpus tools", () => {
@@ -22,12 +22,12 @@ test("session is isolated prompt-only gpt-realtime with no corpus tools", () => 
   assert.doesNotMatch(config.instructions, /面試陪練|自我介紹、論文|暫時不練習面試/);
 });
 
-test("reject cross-origin, missing consent, wrong MIME, invalid SDP before OpenAI", async () => {
+test("reject cross-origin, missing connection intent, wrong MIME, invalid SDP before OpenAI", async () => {
   let called = false;
   const fake = async () => { called = true; throw new Error("must not call"); };
   for (const [headers, body, expected] of [
     [{ origin: "https://other.example" }, SDP, 403],
-    [{ "x-psych-preview-consent": "0" }, SDP, 400],
+    [{ "x-psych-preview-connect": "0" }, SDP, 400],
     [{ "content-type": "application/json" }, SDP, 415],
     [{}, "invalid", 400], [{}, SDP + "a".repeat(100_000), 400],
   ]) {
@@ -106,7 +106,7 @@ test("homepage and default agent use psychological support without the old inter
 test("same-origin check supports public host aliases without trusting forwarded-host", async () => {
   const aliasRequest = (origin, extra = {}) => new Request("https://internal.example/api/session", {
     method: "POST", headers: { host: "preview.example", origin,
-      "content-type": "application/sdp", "x-psych-preview-consent": "1", ...extra }, body: SDP,
+      "content-type": "application/sdp", "x-psych-preview-connect": "1", ...extra }, body: SDP,
   });
   assert.equal((await createPsychSession(aliasRequest("https://preview.example"), "test-key", async () => new Response(SDP))).status, 200);
   for (const [origin, headers] of [

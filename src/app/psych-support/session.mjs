@@ -39,8 +39,8 @@ export async function createPsychSession(request, apiKey, fetchImpl = fetch) {
   if (request.headers.get("origin") !== publicOrigin) {
     return errorResponse(403, "不允許從其他網站建立測試連線。");
   }
-  if (request.headers.get("x-psych-preview-consent") !== "1") {
-    return errorResponse(400, "請先確認資料傳送與研究測試說明。");
+  if (request.headers.get("x-psych-preview-connect") !== "1") {
+    return errorResponse(400, "請從頁面操作開始連線。");
   }
   if (request.headers.get("content-type")?.split(";")[0].trim() !== "application/sdp") {
     return errorResponse(415, "需要 WebRTC SDP 連線資料。");

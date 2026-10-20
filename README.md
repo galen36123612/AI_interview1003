@@ -23,6 +23,8 @@ npm run dev
 npm run check
 ```
 
-開啟首頁，確認測試告知後選擇語音或文字。Vercel Preview 沿用專案既有的 `OPENAI_API_KEY`。詳見 [預覽測試說明](docs/psych-support-preview.md)。
+開啟首頁，點綠色麥克風開始語音，或直接輸入文字並送出。麥克風旁的小字顯示連線／聆聽／說話狀態，點小字可結束連線；點標題清除對話。
+
+此研究測試會將語音與文字傳送至 OpenAI；請使用虛構情境。Vercel Preview 沿用專案既有的 `OPENAI_API_KEY`。詳見 [預覽測試說明](docs/psych-support-preview.md)。
 
 這是心理支持研究原型，不取代真人心理師。回歸測試驗證接線與資料限制，不代表已完成臨床或實際語音品質驗證。
