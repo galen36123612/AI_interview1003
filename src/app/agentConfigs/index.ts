@@ -1,8 +1,5 @@
 import { AllAgentConfigsType } from "@/app/types";
-import simpleExample from "./simpleExample";
+import psychologicalSupport from "./psychologicalSupport";
 
-export const allAgentSets: AllAgentConfigsType = {
-  simpleExample,
-};
-
-export const defaultAgentSetKey = "simpleExample";
+export const allAgentSets: AllAgentConfigsType = { psychologicalSupport };
+export const defaultAgentSetKey = "psychologicalSupport";

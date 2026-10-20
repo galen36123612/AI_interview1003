@@ -1,0 +1,95 @@
+{
+  "status": "development_design_proposal_not_clinically_validated",
+  "principle": "Separate source observations, proposed policy, reference outputs, audit-only outcomes, and runtime inputs.",
+  "ESConv": {
+    "dialog[*].content_before_target": {
+      "use": "router_input_and_case_search_text",
+      "note": "Use only the prefix available before the response. Preserve sequence and speaker."
+    },
+    "dialog[*].speaker": {
+      "use": "message_role_and_contiguous_response_block_construction",
+      "note": "One supporter response can contain multiple adjacent messages."
+    },
+    "dialog[target].annotation.strategy": {
+      "use": "observed_strategy_weak_label",
+      "note": "Not a verified optimal policy; keep separate from human_approved_strategy."
+    },
+    "dialog[target_block].content": {
+      "use": "candidate_reference_output_after_review",
+      "note": "Never pass the target response to the router as if it were prior context."
+    },
+    "emotion_type": {
+      "use": "offline_stratification_or_reviewed_case_metadata",
+      "note": "Source-level label, not a diagnosis or a current per-turn emotion assessment."
+    },
+    "problem_type": {
+      "use": "offline_topic_stratification_or_reviewed_case_filter",
+      "note": "Do not equate topic to response strategy or safety level."
+    },
+    "situation": {
+      "use": "offline_context_audit_or_case_description",
+      "note": "Use as runtime context only if the product actually collects this information before that turn; otherwise it can leak unavailable context."
+    },
+    "survey_score": {
+      "use": "offline_audit_only",
+      "note": "Do not treat overall scores as per-turn causal efficacy or safety. Missing scores are unknown, not zero."
+    },
+    "dialog[later].annotation.feedback": {
+      "use": "offline_followup_feedback_audit_only",
+      "note": "Source placement does not establish that a score rates just one immediately preceding sentence."
+    },
+    "seeker_question1/seeker_question2/supporter_question1/supporter_question2": {
+      "use": "offline_quality_review",
+      "note": "May include collection-interface commentary rather than therapeutic content."
+    }
+  },
+  "EmpatheticDialogues": {
+    "conv_id": {
+      "use": "conversation_grouping_and_traceability",
+      "note": "Never split individual rows of one conversation across development and held-out evaluation."
+    },
+    "conv_id_hit_prefix": {
+      "use": "conservative_grouping_candidate",
+      "note": "Paired conversations sharing a hit may be related; inspect before final split. This is a proposed grouping rule, not an official split."
+    },
+    "utterance_idx": {
+      "use": "sort_and_prefix_construction",
+      "note": "Source numbering is 1-based. Validate continuity."
+    },
+    "speaker_idx": {
+      "use": "source_participant_identifier",
+      "note": "Not a global 0=user/1=assistant flag. Infer within-conversation roles and validate alternation."
+    },
+    "utterance": {
+      "use": "prefix_input_or_candidate_listener_output",
+      "note": "Decode _comma_ after parsing. Do not use storyteller continuations as listener targets."
+    },
+    "context": {
+      "use": "scenario_emotion_label_for_offline_stratification",
+      "note": "In this upload the label is constant within each conversation; do not assume it labels every turn correctly."
+    },
+    "prompt": {
+      "use": "source_situation_description",
+      "note": "This column is NOT the product system prompt. It is unavailable runtime context unless collected from the actual user."
+    },
+    "selfeval": {
+      "use": "opaque_offline_audit_metadata_until_documented",
+      "note": "Do not invent the meaning of each position in the score string."
+    },
+    "tags": {
+      "use": "source_artifact_audit_metadata",
+      "note": "Do not equate these tokens with ESConv support strategies or a clinical safety label."
+    }
+  },
+  "runtime_case_approval": {
+    "required_independent_checks": [
+      "content_quality_review",
+      "risk_scope_review",
+      "privacy_review",
+      "license_review",
+      "translation_localization_review_if_applicable"
+    ],
+    "default_runtime_retrieval_enabled": false,
+    "automatically_approved_by_this_audit": false
+  }
+}

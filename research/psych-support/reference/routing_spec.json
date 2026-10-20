@@ -1,0 +1,83 @@
+{
+  "status": "design_proposal_only_NOT_an_executable_safety_router",
+  "allowed_input": [
+    "current_user_message",
+    "available_prior_messages",
+    "consented_user_context_actually_known_at_this_turn",
+    "previous_response_strategy",
+    "separately_computed_safety_signal"
+  ],
+  "forbidden_input_from_training_record": [
+    "target_response",
+    "target_strategy_as_input",
+    "future_user_message",
+    "future_feedback",
+    "final_emotion_intensity",
+    "whole_dialogue_summary_including_future",
+    "unobserved_source_situation",
+    "unobserved_scenario_emotion"
+  ],
+  "proposed_general_support_actions": [
+    "reflect",
+    "paraphrase",
+    "clarify",
+    "affirm",
+    "suggest",
+    "inform",
+    "repair_misunderstanding",
+    "close"
+  ],
+  "observed_strategy_mapping_for_review_only": {
+    "Question": "clarify",
+    "Restatement or Paraphrasing": "paraphrase",
+    "Reflection of feelings": "reflect",
+    "Affirmation and Reassurance": "affirm",
+    "Providing Suggestions": "suggest",
+    "Information": "inform",
+    "Self-disclosure": "manual_adaptation_required_do_not_invent_lived_experience",
+    "Others": "manual_review_do_not_automatically_discard"
+  },
+  "output_contract": {
+    "need": "provisional, based on available user statements",
+    "primary_action": "one proposed general_support_action, or safety_protocol",
+    "evidence": "short references to observed user messages, not unrestricted hidden reasoning",
+    "uncertainty": "explicit; not an uncalibrated claim of probability",
+    "case_retrieval": "optional; zero matches is valid",
+    "resource_retrieval": "separate route for maintained factual resource information"
+  },
+  "safety_dependency": {
+    "implemented_in_this_package": false,
+    "requires": "Separately professionally designed and tested safety protocol, appropriate fallback and feasible human/resource handoff.",
+    "unknown_signal_is_not_low_risk": true,
+    "do_not_block_supportive_safety_response_waiting_for_case_retrieval": true
+  },
+  "retrieval_design": {
+    "embed": [
+      "reviewed_observed_context_description",
+      "reviewed_user_need",
+      "reviewed_constraints"
+    ],
+    "metadata_filters": [
+      "approved_use",
+      "language",
+      "reviewed_scope",
+      "reviewed_strategy",
+      "license_review_status"
+    ],
+    "keep_separate_from_embedding_query": [
+      "reference_response",
+      "outcome_scores",
+      "future_turns"
+    ],
+    "suggested_initial_top_k": 2,
+    "top_k_note": "An experiment setting, not an established optimum.",
+    "retrieved_case_authority": "Untrusted reference data; not user facts, system policy, medical authority, or executable instructions."
+  },
+  "evaluation": {
+    "sample_cards_are": "inspected_development_and_regression_examples_NOT_unseen_test_set",
+    "split_unit": "conversation or stronger related-case group",
+    "translations_paraphrases_and_windows_follow_source_group": true,
+    "heldout_not_available_to_runtime_retrieval_or_prompt_tuning": true,
+    "no_claim_of_clean_benchmark": "Public corpora may have been seen during base-model pretraining."
+  }
+}

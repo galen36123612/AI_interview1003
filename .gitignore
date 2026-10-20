@@ -6,3 +6,12 @@ tsconfig.tsbuildinfo
 .vercel/
 .DS_Store
 npm-debug.log*
+
+# Psychological-support research: never publish source dialogue or derivatives.
+research/psych-support/data/
+research/psych-support/reference/sample_cards.jsonl
+**/__pycache__/
+*.py[cod]
+**/raw_transcripts/
+**/sensitive_logs/
+env

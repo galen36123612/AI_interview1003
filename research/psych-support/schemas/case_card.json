@@ -1,0 +1,280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "case_card",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 250
+    },
+    "source": {
+      "type": "object"
+    },
+    "group_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 250
+    },
+    "split": {
+      "enum": [
+        "dev",
+        "holdout"
+      ]
+    },
+    "observed_prefix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "content"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 1000
+    },
+    "reference_output": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "content"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 1000
+    },
+    "audit_only": {
+      "type": "object"
+    },
+    "observed_strategy": {
+      "type": "array",
+      "items": {
+        "enum": [
+          null,
+          "Question",
+          "Others",
+          "Providing Suggestions",
+          "Affirmation and Reassurance",
+          "Self-disclosure",
+          "Reflection of feelings",
+          "Information",
+          "Restatement or Paraphrasing"
+        ]
+      },
+      "maxItems": 1000
+    },
+    "proposed_strategy": {},
+    "human_approved_strategy": {
+      "enum": [
+        null,
+        "reflect",
+        "paraphrase",
+        "clarify",
+        "affirm",
+        "suggest",
+        "inform",
+        "repair_misunderstanding",
+        "close",
+        "safety_protocol"
+      ]
+    },
+    "review_flags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "maxItems": 1000
+    },
+    "proposed_uses": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "maxItems": 1000
+    },
+    "content_review_status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "privacy_review_status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "license_review_status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "safety_review_status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "localization_review_status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
+    },
+    "runtime_retrieval_enabled": {
+      "type": "boolean"
+    },
+    "reviewed_context": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "reviewed_response": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "reviewed_scope": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "language": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "approved_use": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "review_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "enum": [
+              "content",
+              "privacy",
+              "license",
+              "safety",
+              "localization"
+            ]
+          },
+          "decision": {
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          },
+          "reviewer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "at_utc": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "content_sha256": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "dimension",
+          "decision",
+          "reviewer",
+          "note",
+          "at_utc",
+          "content_sha256"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 1000
+    }
+  },
+  "required": [
+    "case_id",
+    "source",
+    "group_id",
+    "split",
+    "observed_prefix",
+    "reference_output",
+    "audit_only",
+    "observed_strategy",
+    "proposed_strategy",
+    "human_approved_strategy",
+    "review_flags",
+    "proposed_uses",
+    "content_review_status",
+    "privacy_review_status",
+    "license_review_status",
+    "safety_review_status",
+    "localization_review_status",
+    "runtime_retrieval_enabled",
+    "reviewed_context",
+    "reviewed_response",
+    "reviewed_scope",
+    "language",
+    "approved_use",
+    "review_log"
+  ],
+  "additionalProperties": false
+}
