@@ -1,4 +1,5 @@
 import { PSYCH_SUPPORT_INSTRUCTIONS } from "./instructions.mjs";
+import { VOICE_TURN_DETECTION } from "./turns.mjs";
 
 export const PREVIEW_MODEL = "gpt-realtime";
 export const MAX_SESSION_MS = 10 * 60 * 1000;
@@ -15,12 +16,9 @@ export function sessionConfiguration() {
       input: {
         noise_reduction: { type: "near_field" },
         transcription: { model: "gpt-4o-mini-transcribe", language: "zh" },
-        turn_detection: {
-          type: "semantic_vad", eagerness: "low",
-          create_response: true, interrupt_response: true,
-        },
+        turn_detection: { ...VOICE_TURN_DETECTION },
       },
-      output: { voice: "cedar" },
+      output: { voice: "cedar", speed: 0.9 },
     },
   };
 }

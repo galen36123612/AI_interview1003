@@ -7,7 +7,11 @@ export function applyTranscriptEvent(messages, event) {
     return previous ? messages.map((m) => m.id === id ? next : m) : [...messages, next].slice(-200);
   };
   if (event.type === "conversation.item.input_audio_transcription.completed") {
-    return upsert(event.item_id, "user", event.transcript || "[沒有辨識到語音]");
+    if (!event.transcript?.trim()) return messages.filter((m) => m.id !== event.item_id);
+    return upsert(event.item_id, "user", event.transcript);
+  }
+  if (["conversation.item.input_audio_transcription.failed", "conversation.item.deleted"].includes(event.type)) {
+    return messages.filter((m) => m.id !== event.item_id);
   }
   if (["conversation.item.added", "conversation.item.created"].includes(event.type)) {
     const item = event.item;

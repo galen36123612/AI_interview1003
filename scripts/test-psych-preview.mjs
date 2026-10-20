@@ -17,6 +17,9 @@ test("session is isolated prompt-only gpt-realtime with no corpus tools", () => 
   assert.equal(config.audio.input.turn_detection.type, "semantic_vad");
   assert.equal(config.audio.input.turn_detection.eagerness, "low");
   assert.deepEqual(config.tools, []);
+  assert.equal(config.audio.output.speed, 0.9);
+  assert.equal(config.audio.input.turn_detection.create_response, false);
+  assert.equal(config.audio.input.turn_detection.interrupt_response, false);
   assert.ok(config.instructions.includes(PSYCH_SUPPORT_GREETING));
   assert.ok(config.instructions.includes("心理陪伴 AI"));
   assert.doesNotMatch(config.instructions, /面試陪練|自我介紹、論文|暫時不練習面試/);

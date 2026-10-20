@@ -6,6 +6,7 @@ import Image from "next/image";
 import Transcript from "@/app/components/Transcript";
 import { TranscriptItem } from "@/app/types";
 import { PSYCH_SUPPORT_GREETING } from "./policy.mjs";
+import { createTurnController } from "./turns.mjs";
 
 type Message = { id: string; role: "user" | "assistant"; text: string; receivedAt: number };
 type Status = "idle" | "connecting" | "connected";
@@ -17,6 +18,8 @@ export default function PsychSupportClient() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
+  const [inputNotice, setInputNotice] = useState("");
+  const [typing, setTyping] = useState(false);
   const [playbackBlocked, setPlaybackBlocked] = useState(false);
   const [isPTTActive, setIsPTTActive] = useState(false);
   const [isPTTUserSpeaking, setIsPTTUserSpeaking] = useState(false);
@@ -24,14 +27,14 @@ export default function PsychSupportClient() {
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const draftRef = useRef("");
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const channelRef = useRef<RTCDataChannel | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
-  const responseActiveRef = useRef(false);
-  const outputActiveRef = useRef(false);
+  const turnsRef = useRef<ReturnType<typeof createTurnController> | null>(null);
   const deadlineRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,6 +46,7 @@ export default function PsychSupportClient() {
     connectionTimeoutRef.current = null;
     if (deadlineRef.current) clearTimeout(deadlineRef.current);
     deadlineRef.current = null;
+    turnsRef.current?.dispose(); turnsRef.current = null;
     channelRef.current?.close();
     channelRef.current = null;
     pcRef.current?.close();
@@ -51,8 +55,7 @@ export default function PsychSupportClient() {
     streamRef.current = null;
     if (audioRef.current) { audioRef.current.pause(); audioRef.current.srcObject = null; }
     audioRef.current = null;
-    responseActiveRef.current = false;
-    outputActiveRef.current = false;
+    setInputNotice(""); setTyping(false);
     setStatus("idle"); setSpeaking(false); setListening(false); setPlaybackBlocked(false);
     setIsPTTActive(false); setIsPTTUserSpeaking(false);
   }, []);
@@ -65,12 +68,13 @@ export default function PsychSupportClient() {
   }, []);
   useEffect(() => stop, [stop]);
 
-  const interrupt = useCallback(() => {
-    const channel = channelRef.current;
-    if (channel?.readyState !== "open") return;
-    if (responseActiveRef.current) channel.send(JSON.stringify({ type: "response.cancel" }));
-    if (outputActiveRef.current) channel.send(JSON.stringify({ type: "output_audio_buffer.clear" }));
-  }, []);
+  const interrupt = useCallback(() => { turnsRef.current?.interrupt(); }, []);
+  const updateDraft = (value: string) => {
+    draftRef.current = value;
+    setDraft(value); setTyping(Boolean(value.trim()));
+    turnsRef.current?.setDrafting(Boolean(value.trim()));
+    if (value.trim()) setListening(false);
+  };
 
   const start = async (nextMode: "voice" | "text", firstMessage?: string) => {
     if (pcRef.current || status === "connecting" || configured === false) return;
@@ -83,7 +87,7 @@ export default function PsychSupportClient() {
     }, 30_000);
     try {
       if (nextMode === "voice") {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
         if (generation !== generationRef.current) { stream.getTracks().forEach((t) => t.stop()); return; }
         streamRef.current = stream;
       }
@@ -111,15 +115,27 @@ export default function PsychSupportClient() {
         deadlineRef.current = setTimeout(() => {
           stop(); setError("本次 10 分鐘測試已結束，可重新開始。");
         }, SESSION_LIMIT_MS);
+        turnsRef.current = createTurnController({
+          send: (event: Record<string, unknown>) => {
+            if (generation === generationRef.current && channel.readyState === "open") channel.send(JSON.stringify(event));
+          },
+          setMicrophoneEnabled: (enabled: boolean) => {
+            streamRef.current?.getAudioTracks().forEach((track) => { track.enabled = enabled; });
+          },
+          onDiscard: (id: string) => setMessages((current) => current.filter((message) => message.id !== id)),
+          onNotice: (notice: string) => setInputNotice(notice),
+        });
+        setTyping(Boolean(draftRef.current.trim()));
         if (firstMessage) {
           const item = { id: `msg_${crypto.randomUUID().replaceAll("-", "")}`, type: "message", role: "user",
             content: [{ type: "input_text", text: firstMessage }] };
-          channel.send(JSON.stringify({ type: "conversation.item.create", item }));
+          turnsRef.current.submitText(item);
           setMessages((current) => applyTranscriptEvent(current, { type: "conversation.item.created", item }));
-          channel.send(JSON.stringify({ type: "response.create" }));
-          setDraft("");
+          if (draftRef.current.trim() === firstMessage.trim()) updateDraft("");
+          else turnsRef.current.setDrafting(Boolean(draftRef.current.trim()));
         } else {
-          channel.send(JSON.stringify({ type: "response.create", response: { instructions: `請以 AI 心理支持助手的身分，逐字說：「${PSYCH_SUPPORT_GREETING}」說完等待。` } }));
+          turnsRef.current.greeting(`請以 AI 心理支持助手的身分，逐字說：「${PSYCH_SUPPORT_GREETING}」說完等待。`);
+          turnsRef.current.setDrafting(Boolean(draftRef.current.trim()));
         }
       };
       channel.onclose = () => {
@@ -129,15 +145,13 @@ export default function PsychSupportClient() {
         if (generation !== generationRef.current) return;
         let event;
         try { event = JSON.parse(data); } catch { return; }
+        if (!turnsRef.current?.handle(event)) return;
         setMessages((current) => applyTranscriptEvent(current, event));
-        if (event.type === "response.created") responseActiveRef.current = true;
-        if (["response.done", "response.completed"].includes(event.type)) responseActiveRef.current = false;
-        if (event.type === "output_audio_buffer.started") { outputActiveRef.current = true; setSpeaking(true); }
-        if (["output_audio_buffer.stopped", "output_audio_buffer.cleared"].includes(event.type)) {
-          outputActiveRef.current = false; setSpeaking(false);
-        }
-        if (event.type === "input_audio_buffer.speech_started") setListening(true);
+        if (event.type === "output_audio_buffer.started") setSpeaking(true);
+        if (["output_audio_buffer.stopped", "output_audio_buffer.cleared"].includes(event.type)) setSpeaking(false);
+        if (event.type === "input_audio_buffer.speech_started" && turnsRef.current.allowsVoice()) setListening(true);
         if (["input_audio_buffer.speech_stopped", "input_audio_buffer.committed"].includes(event.type)) setListening(false);
+        if (event.type === "response.done" && event.response?.status === "failed") setError("這次回應未完成，請重試或重新連線。");
         if (event.type === "error") setError("Realtime 回應發生錯誤，請重試或重新連線。");
       };
       const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
@@ -166,16 +180,15 @@ export default function PsychSupportClient() {
     if (!text.trim()) return;
     if (status === "idle") { void start("text", text.trim()); return; }
     if (status !== "connected" || channel?.readyState !== "open") return;
-    interrupt();
+    setError("");
     const item = { id: `msg_${crypto.randomUUID().replaceAll("-", "")}`, type: "message", role: "user",
       content: [{ type: "input_text", text: text.trim() }] };
-    channel.send(JSON.stringify({ type: "conversation.item.create", item }));
+    turnsRef.current?.submitText(item);
     setMessages((current) => applyTranscriptEvent(current, { type: "conversation.item.created", item }));
-    channel.send(JSON.stringify({ type: "response.create" }));
-    setDraft("");
+    updateDraft("");
   };
 
-  const clear = () => { stop(); setMessages([]); setRatings({}); setDraft(""); setError(""); };
+  const clear = () => { stop(); setMessages([]); setRatings({}); updateDraft(""); setError(""); };
   const connected = status === "connected";
 
   const togglePushToTalk = () => {
@@ -184,26 +197,17 @@ export default function PsychSupportClient() {
     interrupt();
     const next = !isPTTActive;
     setIsPTTActive(next); setIsPTTUserSpeaking(false);
-    channel.send(JSON.stringify({ type: "session.update", session: {
-      type: "realtime", audio: { input: { turn_detection: next ? null : {
-        type: "semantic_vad", eagerness: "low", create_response: true, interrupt_response: true,
-      } } },
-    } }));
-    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = !next; });
+    turnsRef.current?.setManual(next);
   };
   const beginRecording = () => {
     if (!connected || !isPTTActive || channelRef.current?.readyState !== "open") return;
-    interrupt();
-    channelRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
-    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
+    if (!turnsRef.current?.beginRecording()) return;
     setIsPTTUserSpeaking(true); setListening(true);
   };
   const finishRecording = () => {
     if (!connected || !isPTTUserSpeaking || channelRef.current?.readyState !== "open") return;
-    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
     setIsPTTUserSpeaking(false); setListening(false);
-    channelRef.current.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-    channelRef.current.send(JSON.stringify({ type: "response.create" }));
+    turnsRef.current?.finishRecording();
   };
   const microphoneTitle = status === "connecting" ? "取消連線"
     : !connected ? "開始語音對話"
@@ -219,10 +223,11 @@ export default function PsychSupportClient() {
   const statusText = configured === false ? "尚未設定連線"
     : error ? connected ? "回應異常，點此結束" : "連線失敗，點此重試"
       : playbackBlocked ? "點此播放語音"
-        : status === "connecting" ? "正在連線…"
+        : inputNotice || (typing && connected ? "正在輸入文字" : "")
+          || (status === "connecting" ? "正在連線…"
           : connected ? speaking ? "AI 正在說話" : listening ? "正在聽你說" : "已連線"
-            : "點麥克風開始";
-  const statusTitle = error || (playbackBlocked ? "播放語音" : status === "connecting" ? "取消連線"
+            : "點麥克風開始");
+  const statusTitle = error || inputNotice || (playbackBlocked ? "播放語音" : status === "connecting" ? "取消連線"
     : connected ? "點擊結束連線" : "開始語音對話；也可以直接輸入文字");
   const handleStatusClick = () => {
     if (!error && playbackBlocked && audioRef.current) {
@@ -261,7 +266,7 @@ export default function PsychSupportClient() {
         </div>
       </div>
       <div className="relative flex min-h-0 flex-1 gap-2 overflow-hidden px-2">
-        <Transcript transcriptItems={transcriptItems} userText={draft} setUserText={setDraft}
+        <Transcript transcriptItems={transcriptItems} userText={draft} setUserText={updateDraft}
           onSendMessage={() => sendText()} canSend={status !== "connecting" && configured !== false} downloadRecording={() => undefined}
           handleTalkButtonDown={beginRecording} handleTalkButtonUp={finishRecording}
           isPTTUserSpeaking={isPTTUserSpeaking} isPTTActive={isPTTActive}
