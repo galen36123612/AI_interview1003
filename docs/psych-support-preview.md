@@ -33,7 +33,7 @@ Click the status text next to the microphone to end/cancel a connection. Click t
 
 ```bash
 npm run check
-# 23 psychological persona / entry point / transport / transcript / turn coordination tests, ESLint, production build
+# 25 psychological persona / entry point / transport / transcript / turn coordination tests, ESLint, production build
 
 cd research/psych-support
 python3 -m unittest discover -s tests -v
@@ -63,7 +63,7 @@ The fixed session output speed is 0.9. The prompt requests 2–3 short sentences
 
 Official references: [voice input and manual response control](https://developers.openai.com/api/docs/guides/realtime-conversations), [output speed and asynchronous transcription](https://developers.openai.com/api/reference/resources/realtime/subresources/calls/methods/create).
 
-### Manual content checks (not yet live-model verified)
+### Manual content checks
 
 | Synthetic situation | Expected behavior | Failure condition |
 | --- | --- | --- |
@@ -75,3 +75,11 @@ Official references: [voice input and manual response control](https://developer
 | The student says the suggested opening feels useful | Brief acknowledgement and leave space | Restart the same long advice or add another unsolicited script |
 
 Unit/mocked tests verify input sequencing, not semantic quality or clinical safety. Actual audio speed, recognition, content grounding and comfort still require authenticated Preview testing with a new session. No private transcript is stored or added as evaluation data.
+
+## Live UI observation: 2026-10-20
+
+A synthetic deployed-Preview test of runtime commit `5d908e8` completed eight turns as a high-school student with academic stress and two additional greeting/unclear-input turns. These were real `gpt-realtime` replies to typed UI messages. The initial text-delivery failure was addressed by compact client message IDs; safe error code/parameter diagnostics were also added. The original raw upstream error was not captured, so this does not establish a documented maximum ID length.
+
+The run respected the request not to provide a study plan, produced teacher-opening wording, and handled brief acknowledgement and closing without restarting the conversation. No illness was fabricated in this small run. Remaining issues include an unwarranted promise that a suggested sentence would prevent an argument, a 21-character reply to a 20-character request when counting punctuation, and abstract wording such as “糾結” for unclear input. These observations are not a general success-rate or clinical-safety claim. Microphone recognition and perceived speech speed were not tested.
+
+Synthetic transcripts and screenshots were retained as local review artifacts outside the repository; no private user transcript was committed. Both test connections were ended.
