@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createTurnController } from "../src/app/psych-support/turns.mjs";
+import { createTurnController, createTextMessage, describeRealtimeError } from "../src/app/psych-support/turns.mjs";
 import { applyTranscriptEvent } from "../src/app/psych-support/transcript.mjs";
 
 const textItem = (id, text = "課業讓我有壓力") => ({ id, type: "message", role: "user", content: [{ type: "input_text", text }] });
@@ -144,4 +144,21 @@ test("disposed controller ignores late acknowledgements and cannot send or enabl
   assert.equal(h.ctrl.handle(ack(textItem("t1"))), false);
   h.ctrl.setDrafting(false); h.ctrl.submitText(textItem("t2"));
   assert.equal(h.sent.length, sentCount); assert.equal(h.mic.length, micCount);
+});
+
+
+test("actual text-item factory uses short IDs and survives acknowledgement matching", () => {
+  const h = harness(), item = createTextMessage("合成測試：課業壓力");
+  assert.ok(item.id.length <= 32); assert.match(item.id, /^msg_[a-f0-9]{24}$/);
+  assert.equal(item.content[0].text, "合成測試：課業壓力");
+  h.ctrl.submitText(item); h.ctrl.handle(ack(item));
+  assert.equal(h.replies().length, 1);
+  assert.equal(h.replies()[0].response.metadata.turn_id, item.id);
+});
+
+test("UI error diagnostics include only validated code/parameter, never raw payload", () => {
+  const safe = describeRealtimeError({ code: "invalid_value", param: "item.id", message: "synthetic-secret" });
+  assert.match(safe, /invalid_value/); assert.match(safe, /item.id/); assert.ok(!safe.includes("synthetic-secret"));
+  const unsafe = describeRealtimeError({ code: "Bearer synthetic-secret", param: "user content / synthetic-secret", message: "synthetic-secret" });
+  assert.ok(!unsafe.includes("synthetic-secret")); assert.match(unsafe, /unknown_error/);
 });

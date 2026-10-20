@@ -6,7 +6,7 @@ import Image from "next/image";
 import Transcript from "@/app/components/Transcript";
 import { TranscriptItem } from "@/app/types";
 import { PSYCH_SUPPORT_GREETING } from "./policy.mjs";
-import { createTurnController } from "./turns.mjs";
+import { createTurnController, createTextMessage, describeRealtimeError } from "./turns.mjs";
 
 type Message = { id: string; role: "user" | "assistant"; text: string; receivedAt: number };
 type Status = "idle" | "connecting" | "connected";
@@ -127,8 +127,7 @@ export default function PsychSupportClient() {
         });
         setTyping(Boolean(draftRef.current.trim()));
         if (firstMessage) {
-          const item = { id: `msg_${crypto.randomUUID().replaceAll("-", "")}`, type: "message", role: "user",
-            content: [{ type: "input_text", text: firstMessage }] };
+          const item = createTextMessage(firstMessage);
           turnsRef.current.submitText(item);
           setMessages((current) => applyTranscriptEvent(current, { type: "conversation.item.created", item }));
           if (draftRef.current.trim() === firstMessage.trim()) updateDraft("");
@@ -152,7 +151,7 @@ export default function PsychSupportClient() {
         if (event.type === "input_audio_buffer.speech_started" && turnsRef.current.allowsVoice()) setListening(true);
         if (["input_audio_buffer.speech_stopped", "input_audio_buffer.committed"].includes(event.type)) setListening(false);
         if (event.type === "response.done" && event.response?.status === "failed") setError("這次回應未完成，請重試或重新連線。");
-        if (event.type === "error") setError("Realtime 回應發生錯誤，請重試或重新連線。");
+        if (event.type === "error") setError(describeRealtimeError(event.error));
       };
       const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
       const result = await fetch("/api/session", {
@@ -181,8 +180,7 @@ export default function PsychSupportClient() {
     if (status === "idle") { void start("text", text.trim()); return; }
     if (status !== "connected" || channel?.readyState !== "open") return;
     setError("");
-    const item = { id: `msg_${crypto.randomUUID().replaceAll("-", "")}`, type: "message", role: "user",
-      content: [{ type: "input_text", text: text.trim() }] };
+    const item = createTextMessage(text.trim());
     turnsRef.current?.submitText(item);
     setMessages((current) => applyTranscriptEvent(current, { type: "conversation.item.created", item }));
     updateDraft("");

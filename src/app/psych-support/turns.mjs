@@ -3,6 +3,18 @@ export const VOICE_TURN_DETECTION = Object.freeze({
   type: "semantic_vad", eagerness: "low", create_response: false, interrupt_response: false,
 });
 
+export function createTextMessage(text) {
+  return { id: `msg_${crypto.randomUUID().replaceAll("-", "").slice(0, 24)}`, type: "message", role: "user",
+    content: [{ type: "input_text", text }] };
+}
+
+/** Show schema diagnostics only; never expose upstream messages or input payloads. */
+export function describeRealtimeError(error) {
+  const code = typeof error?.code === "string" && /^[a-z][a-z0-9_]{0,63}$/i.test(error.code) ? error.code : "unknown_error";
+  const param = typeof error?.param === "string" && /^[a-z_][a-z0-9_.]{0,63}$/i.test(error.param) ? error.param : "";
+  return `Realtime 事件錯誤：${code}${param ? `（${param}）` : ""}。請重試或重新連線。`;
+}
+
 export function createTurnController({ send, setMicrophoneEnabled, onDiscard, onNotice, now = Date.now }) {
   let pending = null;
   let active = null;
