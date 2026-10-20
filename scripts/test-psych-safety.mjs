@@ -51,6 +51,17 @@ test("already injured/ingestion concern cannot be downgraded by a later signal o
   assert.equal(selectSafetyResponse("我現在沒有傷害自己的打算，媽媽已經陪著我", "medical").mode, "medical");
 });
 
+test("combined farewell/possessions or unable-to-cope/alone signals request a check, not a diagnosis", () => {
+  for (const text of ["明天不用再見面了，我把重要的東西都送人了。只說晚安就好。", "我怕今晚撐不過去，我是一個人。"]) {
+    const result = selectSafetyResponse(text);
+    assert.equal(result.mode, "check"); assert.match(result.instructions, /你現在有想傷害自己/);
+    assert.equal(selectSafetyResponse("不要問，只說晚安", result.concern).mode, "check");
+  }
+  assert.equal(selectSafetyResponse("我要畢業了，把課本送人，晚安").mode, null);
+  assert.equal(selectSafetyResponse("我現在沒有想傷害自己，只是畢業道別。", "check").mode, null);
+  assert.equal(selectSafetyResponse("我怕今晚撐不過去，我是一個人。", "self").mode, "self");
+});
+
 function harness() {
   const sent = [];
   const ctrl = createTurnController({ send: (e) => sent.push(e), setMicrophoneEnabled() {}, onDiscard() {}, onNotice() {} });

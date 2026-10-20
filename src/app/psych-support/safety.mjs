@@ -4,6 +4,7 @@
  * model judgement. A new connection resets state; this does not establish safety.
  */
 const SCRIPTS = Object.freeze({
+  check: "你剛才的話讓我擔心你現在的安全，我想先直接確認：你現在有想傷害自己，或怕自己會立刻做出傷害自己的事嗎？如果有，或你也不確定能不能控制，請現在聯絡安全、可信任的大人或身邊的人陪你；若可能立刻行動或已受傷，立即聯絡當地緊急服務。我無法替你聯絡或到場。",
   self: "你說可能會傷害自己，我很在意你現在的安全。請現在聯絡一位安全、可信任的大人或身邊的人，直接說：『我怕自己會傷害自己，請現在陪我。』先不要獨處；如果能安全做到，離開危險物品所在的位置，不必自己收拾。若已受傷或可能立刻行動，請立即聯絡當地緊急服務或請身邊的人代為聯絡。我無法替你聯絡或到場；你現在能聯絡誰陪你？",
   others: "你提到可能傷害別人，現在先以你和對方的安全為主。我不能提供傷害或報復的方法。若能安全做到，先與對方保持距離，不要去找對方，也不要拿取危險物品。請現在找安全、可信任的大人或身邊的人協助；如果可能立刻動手，請立即聯絡當地緊急服務。我無法替你聯絡；你現在能請誰來協助？",
   medical: "你提到已經受傷或吞下可能有害的東西，請現在立即聯絡當地緊急服務，或請身邊的人代為聯絡並陪著你。不要等這段對話結束或等症狀出現才求助。我不能判定嚴重程度、計算安全劑量或提供自行處理的方法，也無法替你叫救援。你現在能聯絡誰來協助？",
@@ -22,6 +23,11 @@ function explicitConcern(text) {
     || /我[^。！？；\n]{0,20}(?:傷害自己|伤害自己|自殺|自杀)[^。！？；\n]{0,12}(?:念頭|念头|控制不住)/.test(positive)
     || /\bI (?:want|plan|am going) to (?:hurt myself|kill myself|end my life)\b/i.test(positive)) return "self";
   if (/(?:爸爸|媽媽|妈妈|家人|照顧者|照顾者|伴侶|伴侣)[^。！？；\n]{0,18}(?:現在|现在|正在|剛才|刚才|今晚)[^。！？；\n]{0,16}(?:打我|傷害我|伤害我|威脅我|威胁我)/.test(positive)) return "home";
+  // A combination prompts a direct check; do not assert that intent is confirmed.
+  if ((/(?:不用再見面|不用再见面|最後一次|最后一次|告別|告别|永別|永别|只說晚安|只说晚安)/.test(text)
+      && /(?:重要|珍惜|珍貴|珍贵)[^。！？；\n]{0,14}(?:送人|送走|分給|分给)/.test(text))
+    || (/(?:今晚|現在|现在)[^。！？；\n]{0,10}(?:撐不過去|撑不过去|撐不住|撑不住)/.test(text)
+      && /(?:一個人|一个人|獨處|独处)/.test(text))) return "check";
   return null;
 }
 
@@ -30,8 +36,13 @@ function explicitConcern(text) {
  */
 export function selectSafetyResponse(text, concern = null) {
   const detected = explicitConcern(text);
-  const next = concern === "medical" ? concern : detected || concern;
+  const next = concern === "medical" ? concern
+    : detected === "check" && concern ? concern : detected || concern;
   if (!next) return { concern: null, mode: null, instructions: null };
+  if (next === "check" && !detected
+    && /(?:現在|现在|目前)[^。！？；\n]{0,8}(?:沒有|没有|不會|不会)[^。！？；\n]{0,8}(?:傷害自己|伤害自己|自殺|自杀|自傷|自伤)/.test(text)) {
+    return { concern: null, mode: null, instructions: null };
+  }
   const supported = !detected && ["self", "others"].includes(next)
     && !/(?:方法|步驟|步骤|劑量|剂量|怎麼傷害|怎么伤害|報復|报复)/.test(text)
     && /(?:現在|现在|目前)[^。！？；\n]{0,8}(?:沒有|没有|不會|不会)[^。！？；\n]{0,8}(?:傷害|伤害|自殺|自杀|自傷|自伤)/.test(text)
