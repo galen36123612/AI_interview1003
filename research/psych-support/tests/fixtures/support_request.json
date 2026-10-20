@@ -1,0 +1,15 @@
+{
+  "current_user_message": {
+    "id": "synthetic:current",
+    "role": "user",
+    "content": "我明天要做報告，有點緊張，想請你給我具體建議。"
+  },
+  "available_prior_messages": [],
+  "consented_user_context": [],
+  "previous_action": "none",
+  "safety_signal": {
+    "status": "clear_for_general_support",
+    "origin": "external_fixture",
+    "evidence_message_ids": []
+  }
+}

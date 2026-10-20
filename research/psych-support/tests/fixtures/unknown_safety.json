@@ -1,0 +1,15 @@
+{
+  "current_user_message": {
+    "id": "synthetic:current",
+    "role": "user",
+    "content": "我想聊聊最近的事。"
+  },
+  "available_prior_messages": [],
+  "consented_user_context": [],
+  "previous_action": "none",
+  "safety_signal": {
+    "status": "unknown",
+    "origin": "external_fixture",
+    "evidence_message_ids": []
+  }
+}

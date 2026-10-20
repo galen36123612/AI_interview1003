@@ -1,0 +1,12 @@
+research/
+**/data/raw/
+**/data/processed/
+**/data/holdout/
+**/data/private/
+**/sample_cards.jsonl
+**/raw_transcripts/
+**/sensitive_logs/
+.env*
+!.env.example
+env
+.git/
