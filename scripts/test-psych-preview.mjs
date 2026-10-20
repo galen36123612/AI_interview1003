@@ -11,7 +11,7 @@ const request = (headers = {}, body = SDP) => new Request("https://preview.examp
     "x-psych-preview-connect": "1", ...headers }, body,
 });
 
-test("session is isolated prompt-only gpt-realtime with no corpus tools", () => {
+test("session is psychological gpt-realtime with fixed safety policy and no corpus tools", () => {
   const config = sessionConfiguration();
   assert.equal(config.model, "gpt-realtime");
   assert.equal(config.audio.input.turn_detection.type, "semantic_vad");

@@ -1,3 +1,5 @@
+import { selectSafetyResponse } from "./safety.mjs";
+
 /** Arbitrate typed and spoken turns in memory. No audio or raw event logging. */
 export const VOICE_TURN_DETECTION = Object.freeze({
   type: "semantic_vad", eagerness: "low", create_response: false, interrupt_response: false,
@@ -26,11 +28,18 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
   let recording = false;
   let recordingStartedAt = 0;
   let disposed = false;
+  let safetyConcern = null;
   const audioItems = new Set();
   const blocked = new Set();
   const handled = new Set();
   const deleted = new Set();
   const cancelledResponses = new Set();
+
+  const safetyFor = (text) => {
+    const result = selectSafetyResponse(text, safetyConcern);
+    safetyConcern = result.concern;
+    return result.mode ? { safety: result.mode, instructions: result.instructions } : {};
+  };
 
   const emit = (event) => { if (!disposed) send(event); };
   const syncMicrophone = () => {
@@ -67,6 +76,8 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     emit({ type: "response.create", event_id: `reply_${turn.id}`, response: {
       metadata: { turn_id: turn.id, input_kind: turn.kind },
       ...(turn.instructions ? { instructions: turn.instructions } : {}),
+      ...(turn.safety ? { input: [], max_output_tokens: 1536,
+        metadata: { turn_id: turn.id, input_kind: turn.kind, safety_mode: turn.safety } } : {}),
     } });
   };
   const enqueue = (turn) => { pending = turn; cancelActive(); drain(); };
@@ -88,7 +99,8 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       if (disposed) return;
       textHold = true; drafting = false; recording = false;
       blockVoice(); syncMicrophone(); onNotice("");
-      pending = { id: item.id, kind: "text", ready: false };
+      pending = { id: item.id, kind: "text", ready: false,
+        ...safetyFor(item.content?.filter((c) => c.type === "input_text").map((c) => c.text).join("\n") || "") };
       cancelActive();
       emit({ type: "input_audio_buffer.clear" });
       // Response is requested only after the server acknowledges this exact item.
@@ -151,7 +163,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
           discard(id); onNotice("沒有聽清楚，請再說一次或輸入文字。"); return false;
         }
         handled.add(id); onNotice("");
-        enqueue({ id, kind: "voice", ready: true });
+        enqueue({ id, kind: "voice", ready: true, ...safetyFor(text) });
       }
       if (type === "response.created") {
         const response = event.response;
@@ -177,7 +189,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       return true;
     },
     dispose() {
-      disposed = true; pending = null; active = null;
+      disposed = true; pending = null; active = null; safetyConcern = null;
       audioItems.clear(); blocked.clear(); handled.clear(); deleted.clear(); cancelledResponses.clear();
     },
   };

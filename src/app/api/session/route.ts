@@ -9,7 +9,8 @@ export async function GET() {
     model: PREVIEW_MODEL,
     configured: Boolean(process.env.OPENAI_API_KEY),
     persona: "psychologicalSupport",
-    variant: "A_prompt_only",
+    variant: "B_prompt_explicit_signal_guard",
+    explicitSignalGuardEnabled: true,
     routerEnabled: false,
     ragEnabled: false,
   }, { headers: { "Cache-Control": "no-store" } });

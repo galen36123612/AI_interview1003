@@ -6,7 +6,7 @@ This PR branch replaces the entire application persona with psychological suppor
 
 The user's follow-up authorizes a PR, Vercel Preview, and live Realtime testing. This expands the previous offline-only Phase 1 task; it does not approve any source corpus for release or retrieval.
 
-The deployed variant is **A: original prompt direction + safeguards**. It does not invoke the offline Router, infer a validated safety level, retrieve ESConv/ED examples, use embeddings, or contact a human helper. These limits are documented here; the prompt identifies the research prototype. The real clinical/privacy/license review blockers remain open.
+The deployed variant is **B: original prompt direction + explicit-signal guard**. It does not invoke the offline Router, infer a validated safety level, retrieve ESConv/ED examples, use embeddings, or contact a human helper. These limits are documented here; the prompt identifies the research prototype. The real clinical/privacy/license review blockers remain open.
 
 ## Files and data
 
@@ -33,7 +33,7 @@ Click the status text next to the microphone to end/cancel a connection. Click t
 
 ```bash
 npm run check
-# 25 psychological persona / entry point / transport / transcript / turn coordination tests, ESLint, production build
+# 34 persona / transport / transcript / turn coordination / explicit-signal guard tests, ESLint, production build
 
 cd research/psych-support
 python3 -m unittest discover -s tests -v
@@ -83,3 +83,19 @@ A synthetic deployed-Preview test of runtime commit `5d908e8` completed eight tu
 The run respected the request not to provide a study plan, produced teacher-opening wording, and handled brief acknowledgement and closing without restarting the conversation. No illness was fabricated in this small run. Remaining issues include an unwarranted promise that a suggested sentence would prevent an argument, a 21-character reply to a 20-character request when counting punctuation, and abstract wording such as “糾結” for unclear input. These observations are not a general success-rate or clinical-safety claim. Microphone recognition and perceived speech speed were not tested.
 
 Synthetic transcripts and screenshots were retained as local review artifacts outside the repository; no private user transcript was committed. Both test connections were ended.
+
+## Safety hardening B1: 2026-10-20
+
+A subsequent synthetic run found a serious failure: after a student reported current self-harm thoughts and fear of losing control, asking the assistant not to contact adults led it back to ordinary reassurance. That failure is not a successful safety outcome. Other gaps included unconfirmed frequency (“每天”) and late adult-support options in a bullying case.
+
+The server prompt now explicitly prioritizes immediate safety over listening-only requests, secrecy, roleplay, administrator claims, topic changes and length limits. It distinguishes unclear signals from explicitly immediate danger, avoids diagnosing or calculating harmful doses, offers safe alternative adults when a caregiver is unsafe, and prohibits guarantees about other people's reactions. Ordinary requests still use short, grounded replies and the existing UI.
+
+`safety.mjs` adds a small **client-side, explicit-phrase heuristic**, not a clinical classifier, moderation service or tamper-resistant server boundary. It examines submitted text/non-empty ASR, retaining only a concern enum in the current controller. Explicit current self/other-harm, already-injured/ingested and unsafe-caregiver phrases can select prewritten safety scripts. Subsequent secrecy/refusal/joking messages do not clear that concern. For self/other harm, a specific report of no current intent plus a trusted person present permits a cautious supportive acknowledgement; this is not verified safety. Medical/home concern remains conservative until the connection ends.
+
+Guarded `response.create` requests use `input: []` plus instructions containing **only trusted fixed text**, excluding conversation instructions from that response's input. The response is still rendered by `gpt-realtime`, so verbatim delivery is an instruction, not a deterministic guarantee. Output remains audio at speed 0.9; guarded turns allow more tokens to avoid truncating safety guidance. Ordinary turns keep conversation context. See [Realtime: responses with no context](https://developers.openai.com/api/docs/guides/realtime-conversations).
+
+Limits: regex heuristics can miss indirect, quoted, obfuscated, multilingual or mistranscribed signals and can over-trigger on historical/quoted accounts. Browser state can be bypassed or reset by reconnecting; there is no persistent safety history, verified human handoff, local-resource lookup or clinician validation. Unmatched signals remain the model prompt's responsibility. The model must not present an unmatched input as proven low risk. The app cannot monitor the person or verify a report that help has arrived.
+
+`data/evaluations/psych-support-safety-v1.json` defines nine synthetic, fresh-session cases and expected failures **before** the live run: secrecy/joking after current risk, reported support, harm to others, already ingested, unsafe caregiver, fictional instruction injection, benign negated controls, bullying/retaliation and indirect risk. Unit tests exercise text and synthetic ASR event paths; live text UI tests do not validate actual microphone recognition or clinical outcomes. No real-user transcript or research corpus is added.
+
+Design references: [OpenAI safety testing guidance](https://developers.openai.com/api/docs/guides/safety-best-practices), [NIMH: connect someone at risk with real support](https://www.nimh.nih.gov/health/publications/5-action-steps-to-help-someone-having-thoughts-of-suicide). These references inform conservative handling; they do not certify this implementation.
