@@ -31,7 +31,12 @@ function errorResponse(status, error) {
 
 /** SDP only. Audio and user text travel directly from browser to OpenAI. */
 export async function createPsychSession(request, apiKey, fetchImpl = fetch) {
-  if (request.headers.get("origin") !== new URL(request.url).origin) {
+  // Next.js can use an internal hostname for request.url. The browser's Host
+  // header identifies the public site (including its preview alias). Never use
+  // arbitrary forwarded-host headers as the allowed origin.
+  const requestUrl = new URL(request.url);
+  const publicOrigin = `${requestUrl.protocol}//${request.headers.get("host") || requestUrl.host}`;
+  if (request.headers.get("origin") !== publicOrigin) {
     return errorResponse(403, "不允許從其他網站建立測試連線。");
   }
   if (request.headers.get("x-psych-preview-consent") !== "1") {

@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { applyTranscriptEvent } from "./transcript.mjs";
-import styles from "./psych-support.module.css";
+import Image from "next/image";
+import Transcript from "@/app/components/Transcript";
+import { TranscriptItem } from "@/app/types";
+import { PSYCH_SUPPORT_GREETING } from "./policy.mjs";
 
-type Message = { id: string; role: "user" | "assistant"; text: string };
+type Message = { id: string; role: "user" | "assistant"; text: string; receivedAt: number };
 type Status = "idle" | "connecting" | "connected";
 const SESSION_LIMIT_MS = 10 * 60 * 1000;
 
@@ -16,6 +19,9 @@ export default function PsychSupportClient() {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(false);
+  const [isPTTActive, setIsPTTActive] = useState(false);
+  const [isPTTUserSpeaking, setIsPTTUserSpeaking] = useState(false);
+  const [ratings, setRatings] = useState<Record<string, number>>({});
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -29,7 +35,6 @@ export default function PsychSupportClient() {
   const outputActiveRef = useRef(false);
   const deadlineRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const stop = useCallback(() => {
     generationRef.current += 1;
@@ -50,16 +55,16 @@ export default function PsychSupportClient() {
     responseActiveRef.current = false;
     outputActiveRef.current = false;
     setStatus("idle"); setSpeaking(false); setListening(false); setMuted(false);
+    setIsPTTActive(false); setIsPTTUserSpeaking(false);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetch("/api/psych/session", { cache: "no-store", signal: controller.signal })
+    void fetch("/api/session", { cache: "no-store", signal: controller.signal })
       .then((r) => r.json()).then((info) => setConfigured(info.configured === true)).catch(() => {});
     return () => controller.abort();
   }, []);
   useEffect(() => stop, [stop]);
-  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const interrupt = useCallback(() => {
     const channel = channelRef.current;
@@ -72,7 +77,7 @@ export default function PsychSupportClient() {
     if (!consent || pcRef.current || status === "connecting") return;
     stop();
     const generation = generationRef.current;
-    setMode(nextMode); setMessages([]); setError(""); setStatus("connecting");
+    setMode(nextMode); setMessages([]); setRatings({}); setError(""); setStatus("connecting");
     const controller = new AbortController(); abortRef.current = controller;
     connectionTimeoutRef.current = setTimeout(() => {
       if (generation === generationRef.current) { stop(); setError("連線逾時，請重新開始。"); }
@@ -107,7 +112,7 @@ export default function PsychSupportClient() {
         deadlineRef.current = setTimeout(() => {
           stop(); setError("本次 10 分鐘測試已結束，可重新開始。");
         }, SESSION_LIMIT_MS);
-        channel.send(JSON.stringify({ type: "response.create", response: { instructions: "請只說固定開場，說完等待。" } }));
+        channel.send(JSON.stringify({ type: "response.create", response: { instructions: `請以 AI 心理支持助手的身分，逐字說：「${PSYCH_SUPPORT_GREETING}」說完等待。` } }));
       };
       channel.onclose = () => {
         if (generation === generationRef.current) { stop(); setError("測試連線已關閉，請重新開始。"); }
@@ -128,7 +133,7 @@ export default function PsychSupportClient() {
         if (event.type === "error") setError("Realtime 回應發生錯誤，請重試或重新連線。");
       };
       const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
-      const result = await fetch("/api/psych/session", {
+      const result = await fetch("/api/session", {
         method: "POST", headers: { "Content-Type": "application/sdp", "x-psych-preview-consent": "1" },
         body: offer.sdp, signal: controller.signal,
       });
@@ -160,63 +165,91 @@ export default function PsychSupportClient() {
     setDraft("");
   };
 
-  const clear = () => { stop(); setMessages([]); setDraft(""); setError(""); };
+  const clear = () => { stop(); setMessages([]); setRatings({}); setDraft(""); setError(""); };
   const toggleMute = () => {
     streamRef.current?.getAudioTracks().forEach((track) => { track.enabled = muted; });
     setMuted(!muted);
   };
   const connected = status === "connected";
 
+  const togglePushToTalk = () => {
+    const channel = channelRef.current;
+    if (!connected || mode !== "voice" || channel?.readyState !== "open") return;
+    interrupt();
+    const next = !isPTTActive;
+    setIsPTTActive(next); setIsPTTUserSpeaking(false);
+    channel.send(JSON.stringify({ type: "session.update", session: {
+      type: "realtime", audio: { input: { turn_detection: next ? null : {
+        type: "semantic_vad", eagerness: "low", create_response: true, interrupt_response: true,
+      } } },
+    } }));
+    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = !next; });
+    setMuted(false);
+  };
+  const beginRecording = () => {
+    if (!connected || !isPTTActive || channelRef.current?.readyState !== "open") return;
+    interrupt();
+    channelRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
+    setIsPTTUserSpeaking(true); setListening(true);
+  };
+  const finishRecording = () => {
+    if (!connected || !isPTTUserSpeaking || channelRef.current?.readyState !== "open") return;
+    streamRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
+    setIsPTTUserSpeaking(false); setListening(false);
+    channelRef.current.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+    channelRef.current.send(JSON.stringify({ type: "response.create" }));
+  };
+  const transcriptItems: TranscriptItem[] = messages.map((m) => ({
+    itemId: m.id, type: "MESSAGE", role: m.role, title: m.text,
+    timestamp: new Date(m.receivedAt).toLocaleTimeString("zh-TW", { hour12: false }) +
+      "." + String(m.receivedAt % 1000).padStart(3, "0"),
+    createdAtMs: m.receivedAt, expanded: false, status: "DONE", isHidden: false,
+  }));
+
   return (
-    <main className={styles.shell}>
-      <header className={styles.header}>
-        <div><p className={styles.eyebrow}>REALTIME · RESEARCH PREVIEW</p><h1>先說說，今天的你。</h1>
-          <p className={styles.subtitle}>心理支持 AI 測試｜溫暖、具體，留一點空間給你的感受。</p></div>
-        <span className={styles.badge}>A 版 · 原 Prompt＋護欄</span>
-      </header>
-      <section className={styles.notice} aria-label="研究測試說明">
-        <strong>私人研究預覽，請用虛構情境測試。</strong>
-        <p>不是心理師、診斷或危機服務。Router、案例 RAG 與真人接手尚未啟用。若有立即危險，請直接尋求當地緊急服務或身邊可信任的人協助。</p>
-        <p>語音與文字會傳送至 OpenAI。本頁不將逐字稿寫入後端紀錄或資料庫；畫面內容暫存於目前分頁，可隨時清除。</p>
-        <label className={styles.consent}><input type="checkbox" checked={consent} disabled={status !== "idle"}
-          onChange={(e) => setConsent(e.target.checked)} />我了解以上說明，同意將這次測試內容傳送至 OpenAI。</label>
-      </section>
-      <div className={styles.workspace}>
-        <aside className={styles.sidebar}>
-          <h2>開始一段對話</h2>
-          <p>每次最多 10 分鐘。語音模式可以自然停頓，也可以打字補充。</p>
-          {configured === false && <p role="alert" className={styles.error}>Preview 尚未設定 API key。</p>}
-          <button className={styles.primary} disabled={!consent || status !== "idle" || configured === false} onClick={() => void start("voice")}>開始語音對話</button>
-          <button className={styles.secondary} disabled={!consent || status !== "idle" || configured === false} onClick={() => void start("text")}>純文字測試（不用麥克風）</button>
-          {status !== "idle" && <button className={styles.secondary} onClick={stop}>{status === "connecting" ? "取消連線" : "結束連線"}</button>}
-          {connected && mode === "voice" && <button className={styles.secondary} onClick={toggleMute}>{muted ? "開啟麥克風" : "暫時靜音"}</button>}
-          {connected && <button className={styles.secondary} onClick={interrupt}>停止 AI 說話</button>}
-          {connected && <button className={styles.linkButton} onClick={() => void audioRef.current?.play().then(() => setError("")).catch(() => setError("請再試一次播放語音。"))}>播放語音</button>}
-          <button className={styles.linkButton} onClick={clear}>結束並清除對話</button>
-          <div className={styles.divider} />
-          <h2>可以試試這些情境</h2>
-          {["我今天有點委屈，先不要給建議，只想有人聽。", "我想跟同事表達界線，可以幫我想幾句自然的說法嗎？", "我終於完成一直不敢做的事，今天有點開心。"].map((text) =>
-            <button key={text} className={styles.scenario} disabled={!connected} onClick={() => sendText(text)}>{text}</button>)}
-          <p className={styles.small}>模型：gpt-realtime<br />案例檢索：關閉 · 0 筆</p>
-        </aside>
-        <section className={styles.conversation} aria-label="測試對話">
-          <div className={styles.status} role="status"><span className={connected ? styles.dotConnected : styles.dot} />
-            {status === "connecting" ? "正在連線…" : connected ? speaking ? "AI 正在說話" : listening ? "正在聽你說" : muted ? "麥克風已靜音" : "已連線，慢慢說就好" : "尚未連線"}</div>
-          <div className={styles.messages}>
-            {messages.length === 0 && <div className={styles.empty}><span>你好。</span><p>不用急著整理好。<br />先從一件小事開始，也可以。</p></div>}
-            {messages.map((m) => <article key={m.id} className={m.role === "user" ? styles.userMessage : styles.aiMessage}>
-              <span>{m.role === "user" ? "你" : "AI 支持助手"}</span><p>{m.text}</p></article>)}
-            <div ref={scrollRef} />
-          </div>
-          {error && <p className={styles.error} role="alert">{error}</p>}
-          <form className={styles.composer} onSubmit={(e) => { e.preventDefault(); sendText(); }}>
-            <label className={styles.srOnly} htmlFor="psych-message">訊息</label>
-            <input id="psych-message" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={8000}
-              disabled={!connected} placeholder={connected ? "也可以在這裡打字…" : "先確認說明，再開始測試"} autoComplete="off" />
-            <button type="submit" disabled={!connected || !draft.trim()} className={styles.send}>傳送</button>
-          </form>
-        </section>
+    <div className="relative flex flex-col bg-gray-100 text-base text-gray-800" style={{ height: "100dvh", maxHeight: "100dvh" }}>
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 p-3 text-lg font-semibold sm:p-5">
+        <div className="flex items-center">
+          <Image src="/aigoasia_logo.png" alt="Logo" width={40} height={40} className="mr-2" />
+          <div>AI 心理支持</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-normal text-gray-500" role="status">
+            {status === "connecting" ? "正在連線…" : connected ? speaking ? "AI 正在說話" : listening ? "正在聽你說" : "已連線" : "尚未連線"}
+          </span>
+          <button type="button" onClick={speaking ? interrupt : togglePushToTalk} disabled={!connected || mode !== "voice"}
+            className={`relative flex h-12 w-12 items-center justify-center rounded-full font-medium text-white shadow-md transition-all duration-200 disabled:opacity-50 ${isPTTActive ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"}`}
+            title={speaking ? "點擊打斷 AI 講話" : isPTTActive ? "切換持續對話" : "切換按鍵說話"}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+            </svg>
+          </button>
+        </div>
       </div>
-    </main>
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-3 px-4 py-2 text-xs text-gray-600">
+        <span>研究測試，不取代真人心理師。內容會傳送至 OpenAI，請使用虛構情境。</span>
+        <label className="flex items-center gap-2"><input type="checkbox" checked={consent} disabled={status !== "idle"} onChange={(e) => setConsent(e.target.checked)} />我了解並同意</label>
+        {status === "idle" ? <>
+          <button className="rounded bg-gray-900 px-3 py-2 text-white disabled:opacity-40" disabled={!consent || configured === false} onClick={() => void start("voice")}>開始語音</button>
+          <button className="rounded border border-gray-300 px-3 py-2 disabled:opacity-40" disabled={!consent || configured === false} onClick={() => void start("text")}>純文字測試</button>
+        </> : <button className="rounded border border-gray-300 px-3 py-2" onClick={stop}>{connected ? "結束連線" : "取消連線"}</button>}
+        {connected && mode === "voice" && !isPTTActive && <button onClick={toggleMute}>{muted ? "開啟麥克風" : "靜音"}</button>}
+        {connected && <button onClick={interrupt}>停止 AI 說話</button>}
+        {connected && <button onClick={() => void audioRef.current?.play().then(() => setError("")).catch(() => setError("請再試一次播放語音。"))}>播放語音</button>}
+        <button onClick={clear}>結束並清除</button>
+      </div>
+      {configured === false && <p className="px-4 py-1 text-xs text-red-700" role="alert">Preview 尚未設定 API key。</p>}
+      {error && <p className="px-4 py-1 text-xs text-red-700" role="alert">{error}</p>}
+      <div className="relative flex min-h-0 flex-1 gap-2 overflow-hidden px-2">
+        <Transcript transcriptItems={transcriptItems} userText={draft} setUserText={setDraft}
+          onSendMessage={() => sendText()} canSend={connected} downloadRecording={() => undefined}
+          handleTalkButtonDown={beginRecording} handleTalkButtonUp={finishRecording}
+          isPTTUserSpeaking={isPTTUserSpeaking} isPTTActive={isPTTActive}
+          onRate={(id, rating) => setRatings((current) => ({ ...current, [id]: rating }))}
+          ratingsByTargetId={ratings} />
+      </div>
+    </div>
   );
 }

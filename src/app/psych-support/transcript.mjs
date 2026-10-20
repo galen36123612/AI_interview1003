@@ -3,7 +3,7 @@ export function applyTranscriptEvent(messages, event) {
   const upsert = (id, role, text, append = false) => {
     if (!id || !["user", "assistant"].includes(role) || typeof text !== "string") return messages;
     const previous = messages.find((m) => m.id === id);
-    const next = { id, role, text: append ? (previous?.text || "") + text : text };
+    const next = { id, role, text: append ? (previous?.text || "") + text : text, receivedAt: previous?.receivedAt ?? Date.now() };
     return previous ? messages.map((m) => m.id === id ? next : m) : [...messages, next].slice(-200);
   };
   if (event.type === "conversation.item.input_audio_transcription.completed") {

@@ -7,8 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src/app/App.tsx src/app/agentConfigs/simpleExample.ts src/app/components/Transcript.tsx src/app/contexts/EventContext.tsx src/app/hooks/useHandleServerEvent.ts src/app/api/session/route.ts src/app/data/interviewCoachKnowledge.ts src/app/data/interviewCoachScripts.ts src/app/data/interviewCoachDomains.ts --max-warnings=0 src/app/psych-support/PsychSupportClient.tsx src/app/psych-support/page.tsx src/app/psych-support/session.mjs src/app/psych-support/transcript.mjs src/app/api/psych/session/route.ts scripts/test-psych-preview.mjs",
-    "test": "node scripts/validate-interview-coach.mjs && node --test scripts/test-psych-preview.mjs",
+    "lint": "eslint src/app/App.tsx src/app/page.tsx src/app/layout.tsx src/app/components/Transcript.tsx src/app/agentConfigs/index.ts src/app/agentConfigs/psychologicalSupport.ts src/app/psych-support/PsychSupportClient.tsx src/app/psych-support/page.tsx src/app/psych-support/session.mjs src/app/psych-support/transcript.mjs src/app/api/session/route.ts src/app/api/psych/session/route.ts scripts/test-psych-preview.mjs --max-warnings=0",
+    "test": "node --test scripts/test-psych-preview.mjs",
     "check": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {
