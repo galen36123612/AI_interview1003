@@ -10,7 +10,7 @@ const topicWords = {
   mood: ["低落", "憂鬱", "焦慮", "情緒", "覺察"],
   overseas: ["海外", "留學", "文化衝擊"],
 };
-const skipTokens = new Set(["推薦", "文章", "相關", "閱讀", "資料", "看看", "可以", "有沒有", "什麼", "一篇", "兩篇", "幾篇", "提供", "幫忙", "一下", "請問", "想看", "希望", "原文", "給我", "幫我", "關於", "連結", "來源", "這個", "那個"]);
+const skipTokens = new Set(["推薦", "文章", "相關", "閱讀", "資料", "看看", "可以", "有沒有", "什麼", "一篇", "兩篇", "幾篇", "提供", "幫忙", "一下", "請問", "想看", "希望", "原文", "給我", "幫我", "關於", "連結", "來源", "這個", "那個", "問題", "狀況", "情況", "忽略", "規則", "保證", "直接", "所有", "目前"]);
 const articleIntent = (text) => !/(?:不要|不用|不想|別)(?:再|給我|推薦|看|讀|找|提供){0,3}(?:文章|閱讀|讀物)/.test(text)
   && /文章|延伸閱讀|推薦讀物|原文連結/.test(text);
 const normalized = (text) => text.normalize("NFKC").toLowerCase();
@@ -38,6 +38,7 @@ export function routeKnowledge(text, previousTopic = null) {
   const requestedArticles = articleIntent(input) && !["medical_boundary", "listen"].includes(guideId);
   let articles = [];
   if (requestedArticles) {
+    const limit = /兩篇|2篇|兩個|2個/.test(input) ? 2 : 1;
     const tokens = queryTokens(input);
     const hasCurrentSubject = tokens.some((token) => KNOWLEDGE.articles.some((a) => normalized(a.title).includes(token)));
     // Only subject-free follow-ups may inherit a topic. An explicit new unknown
@@ -48,7 +49,7 @@ export function routeKnowledge(text, previousTopic = null) {
     articles = KNOWLEDGE.articles.map((article) => ({ article, score:
       article.keywords.reduce((n, word) => n + (searchText.includes(word) ? Math.min(word.length, 5) * 2 : 0), 0)
       + searchTokens.reduce((n, token) => n + (normalized(article.title).includes(token) ? token.length : 0), 0) }))
-      .filter((a) => a.score >= 2).sort((a, b) => b.score - a.score || a.article.id.localeCompare(b.article.id)).slice(0, 2).map((a) => a.article);
+      .filter((a) => a.score >= 2).sort((a, b) => b.score - a.score || a.article.id.localeCompare(b.article.id)).slice(0, limit).map((a) => a.article);
     guideId = null;
   }
   if (!guideId && !requestedArticles) return { topic, route: "core_only", references: [] };

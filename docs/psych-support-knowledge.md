@@ -1,4 +1,4 @@
-# 心理支持 C1：常駐核心與檔案路由
+# 心理支持 C2：常駐核心與檔案路由
 
 本次從心理支持 B2 `88c7203` 另開 `experiment/psych-knowledge-routing`。新 PR 的 base 是 `experiment/psych-support-realtime`，因此只比較這次知識分工的差異。PR #1、PR #2 與 main 都不更新、不合併。使用新 PR 的 Vercel Preview，重新整理並建立新連線。
 
@@ -59,7 +59,7 @@ UI 原始碼逐位元組維持 B2：沒有新頁面、控制列、上傳器或�
 ```sh
 npm run knowledge:build  # 更新指引或索引後產生部署 allowlist
 npm run knowledge:check # 生成檔漂移時失敗
-npm run check           # ESLint、46 項測試、production build
+npm run check           # ESLint、47 項測試、production build
 cd research/psych-support
 python3 -m psych_support preflight
 ```
@@ -67,3 +67,9 @@ python3 -m psych_support preflight
 測試包含：資料覆蓋與 allowlist、單一指引選路、無結果／明確換題、查詢注入、五項門檻與審核過期、安全優先、文字與合成 ASR 同路徑、顯示來源只附一次與取消隔離，以及 UI 原始碼不變。
 
 預覽實測計畫：學生課業→台詞→相關文章、只聽不建議、未知文章與換題、個人診斷要求、危險狀態要求只查文章、資料來源與未核准案例要求、含蓄風險。這些是虛構 UI 文字測試，不能代替實際麥克風、臨床或大規模品質驗證。結果寫入 PR 說明及本地 review artifacts，不提交私人對話。
+
+## 初測後調整
+
+C1 的八組、12 輪真實 Realtime 文字測試中，台詞加入了未確認的「進度跟不上」，文章第二筆也曾因通用詞而誤配到工作倦怠。C2 移除這種台詞補述、預設只回最相關一篇（明確要求兩篇才最多兩篇），並排除更多通用詞。原始初測紀錄保留，不把它覆寫成成功結果。
+
+C1 的危險對話兩輪仍保留即時真人協助且沒有文章 footer，但曾出現 `invalid_value` 的事件錯誤；未保存原始 provider payload，原因不能確定。C2 對送出事件加上短識別碼，只在錯誤中顯示可驗證的來源事件種類，仍不顯示原始訊息或私人輸入。未因此吞掉錯誤或聲稱解決問題。含蓄風險測試有引導真人協助，但未問出預定的直接安全問題，列為嚴格條件缺口。

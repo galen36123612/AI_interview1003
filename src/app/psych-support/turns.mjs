@@ -15,7 +15,9 @@ export function createTextMessage(text) {
 export function describeRealtimeError(error) {
   const code = typeof error?.code === "string" && /^[a-z][a-z0-9_]{0,63}$/i.test(error.code) ? error.code : "unknown_error";
   const param = typeof error?.param === "string" && /^[a-z_][a-z0-9_.]{0,63}$/i.test(error.param) ? error.param : "";
-  return `Realtime 事件錯誤：${code}${param ? `（${param}）` : ""}。請重試或重新連線。`;
+  const origin = ["input_audio_buffer.clear", "input_audio_buffer.commit", "conversation.item.create", "conversation.item.delete",
+    "response.create", "response.cancel", "output_audio_buffer.clear", "session.update"].includes(error?.client_event_type) ? error.client_event_type : "";
+  return `Realtime 事件錯誤：${code}${param ? `（${param}）` : ""}${origin ? `［${origin}］` : ""}。請重試或重新連線。`;
 }
 
 export function createTurnController({ send, setMicrophoneEnabled, onDiscard, onNotice, now = Date.now }) {
@@ -36,6 +38,8 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
   const handled = new Set();
   const deleted = new Set();
   const cancelledResponses = new Set();
+  const sentEventTypes = new Map();
+  let eventSequence = 0;
 
   const contextFor = (text) => {
     const result = selectSafetyResponse(text, safetyConcern);
@@ -47,7 +51,13 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       references: knowledge.references } : {};
   };
 
-  const emit = (event) => { if (!disposed) send(event); };
+  const emit = (event) => {
+    if (disposed) return;
+    const tagged = { ...event, event_id: event.event_id || `client_${++eventSequence}` };
+    sentEventTypes.set(tagged.event_id, tagged.type);
+    if (sentEventTypes.size > 64) sentEventTypes.delete(sentEventTypes.keys().next().value);
+    send(tagged);
+  };
   const syncMicrophone = () => {
     if (!disposed) setMicrophoneEnabled(!drafting && !textHold && (!manual || recording));
   };
@@ -143,6 +153,9 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     handle(event) {
       if (disposed) return false;
       const type = event.type;
+      if (type === "error" && event.error && sentEventTypes.has(event.error.event_id)) {
+        event.error.client_event_type = sentEventTypes.get(event.error.event_id);
+      }
       if (cancelledResponses.has(event.response_id) && /^response\.(output_audio_transcript|audio_transcript|output_text|text)\./.test(type)) return false;
       // Append trusted source links to the existing message text only. The UI and
       // spoken audio stay unchanged; cancelled/stale responses get no citations.
@@ -206,6 +219,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     dispose() {
       disposed = true; pending = null; active = null; safetyConcern = null; knowledgeTopic = null;
       audioItems.clear(); blocked.clear(); handled.clear(); deleted.clear(); cancelledResponses.clear();
+      sentEventTypes.clear();
     },
   };
 }
