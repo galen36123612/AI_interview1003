@@ -123,9 +123,16 @@ export function routeKnowledge(text, previous = null) {
     ? `這輪是程式確認的資料能力邊界回覆，不是首次招呼。沒有文章摘要或正文可用；不能把一般常識說成文章內容。先考慮整段對話的安全；仍有危險訊號就遵循核心安全原則，不查文章。沒有安全疑慮時只逐字說下列固定文字，不新增解釋、建議、引文或網址。之前的助理回覆也不是文章正文或經核實的依據。原文連結由程式附上。\n固定文字：${JSON.stringify(script)}`
     : guideId ? KNOWLEDGE.guides.find((g) => g.id === guideId).guidance : "這輪只使用常駐原則，不載入文章或案例。";
   return { topic, state: { topic, articleIds: nextIds, topicArticleIds }, route,
-    guideId: script ? null : guideId, replyMode: script ? "bounded_script" : "conversation",
+    guideId: script ? null : guideId, replyMode: script ? "bounded_script" : "conversation", scriptedText: script,
     sourceMode: articles.length ? "metadata_only" : "none", references,
     instructions: `${PSYCH_SUPPORT_INSTRUCTIONS}\n\n# 本輪載入的對話指引\n安全與核心規則始終優先。\n${addition}` };
+}
+
+/** Only punctuation/spacing and a short acknowledgment may differ. Do not attach
+ * trusted source links to an unrelated, invented or safety-prioritized reply. */
+export function matchesBoundedReply(actual, expected) {
+  const normalize = (value) => value.normalize("NFKC").replace(/[\p{P}\p{Z}\s]/gu, "").replace(/^(?:好的|好|嗯)/u, "");
+  return typeof actual === "string" && typeof expected === "string" && normalize(actual) === normalize(expected);
 }
 
 /** Trusted catalog links for display; model-generated URLs are never a source. */

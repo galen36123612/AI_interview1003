@@ -119,7 +119,8 @@ test("explicit safety and latched concerns bypass all knowledge and article sele
 test("citations decorate only the matching completed display transcript, once, and never stale/cancelled replies", () => {
   const h = harness(), item = h.text("推薦一篇霸凌文章");
   h.ctrl.handle({ type: "response.created", response: { id: "r1", metadata: { turn_id: item.id } } });
-  const final = { type: "response.output_audio_transcript.done", response_id: "r1", transcript: "可以看看這篇文章。" };
+  const final = { type: "response.output_audio_transcript.done", response_id: "r1",
+    transcript: routeKnowledge("推薦一篇霸凌文章").scriptedText };
   h.ctrl.handle(final); assert.match(final.transcript, /延伸閱讀（原文）/); assert.match(final.transcript, /https:\/\/www.fundatalk.com/);
   const once = final.transcript; h.ctrl.handle(final); assert.equal(final.transcript, once);
   const stale = { type: final.type, response_id: "old", transcript: "old" }; h.ctrl.handle(stale); assert.equal(stale.transcript, "old");

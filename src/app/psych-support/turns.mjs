@@ -1,5 +1,5 @@
 import { selectSafetyResponse } from "./safety.mjs";
-import { routeKnowledge, citationFooter } from "./knowledge.mjs";
+import { routeKnowledge, citationFooter, matchesBoundedReply } from "./knowledge.mjs";
 import { KNOWLEDGE } from "./knowledge.generated.mjs";
 import { diagnosticSink, createDiagnosticEmitter, safeErrorDetails } from "./diagnostics.mjs";
 
@@ -54,7 +54,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     const knowledge = routeKnowledge(text, knowledgeState);
     return { knowledgeRoute: knowledge.route, instructions: knowledge.instructions,
       guideId: knowledge.guideId, replyMode: knowledge.replyMode, sourceMode: knowledge.sourceMode,
-      references: knowledge.references, nextKnowledgeState: knowledge.state };
+      references: knowledge.references, nextKnowledgeState: knowledge.state, scriptedText: knowledge.scriptedText };
   };
 
   const emit = (event) => {
@@ -183,9 +183,15 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       // spoken audio stay unchanged; cancelled/stale responses get no citations.
       if (/^response\.(output_audio_transcript|audio_transcript|output_text|text)\.done$/.test(type)
         && active && !active.cancelled && event.response_id === active.responseId) {
-        if (active.nextKnowledgeState) knowledgeState = active.nextKnowledgeState;
-        const footer = citationFooter(active.references || []);
         const field = typeof event.transcript === "string" ? "transcript" : "text";
+        // Idempotent on a repeated completed event already decorated by this controller.
+        const expectedFooter = citationFooter(active.references || []);
+        const text = expectedFooter && event[field]?.endsWith(expectedFooter) ? event[field].slice(0, -expectedFooter.length) : event[field];
+        active.sourceReplyAccepted = !active.scriptedText || matchesBoundedReply(text, active.scriptedText);
+        if (active.scriptedText) trace("bounded_reply_checked", { turn_id: active.id,
+          knowledge_route: active.knowledgeRoute, matches_script: active.sourceReplyAccepted });
+        if (active.sourceReplyAccepted && active.nextKnowledgeState) knowledgeState = active.nextKnowledgeState;
+        const footer = active.sourceReplyAccepted ? expectedFooter : "";
         if (typeof event[field] === "string" && !event[field].endsWith(footer)) event[field] += footer;
       }
       if (["conversation.item.added", "conversation.item.created"].includes(type)) {
@@ -228,7 +234,8 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       }
       if (["response.done", "response.completed"].includes(type)) {
         if (active && (event.response?.id === active.responseId || event.response?.metadata?.turn_id === active.id)) {
-          if (!active.cancelled && event.response?.status === "completed" && active.nextKnowledgeState) knowledgeState = active.nextKnowledgeState;
+          if (!active.cancelled && event.response?.status === "completed" && active.nextKnowledgeState
+            && (!active.scriptedText || active.sourceReplyAccepted)) knowledgeState = active.nextKnowledgeState;
           trace("response_finished", { turn_id: active.id, response_id: event.response?.id || null,
             status: ["completed", "cancelled", "failed", "incomplete"].includes(event.response?.status) ? event.response.status : "unknown",
             cancelled_by_client: active.cancelled });
