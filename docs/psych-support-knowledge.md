@@ -1,4 +1,4 @@
-# 心理支持 C2：常駐核心與檔案路由
+# 心理支持 C3：資料能力邊界與會話選路
 
 本次從心理支持 B2 `88c7203` 另開 `experiment/psych-knowledge-routing`。新 PR 的 base 是 `experiment/psych-support-realtime`，因此只比較這次知識分工的差異。PR #1、PR #2 與 main 都不更新、不合併。使用新 PR 的 Vercel Preview，重新整理並建立新連線。
 
@@ -40,9 +40,9 @@
 
 本版使用同步本機檔案選路，不新增模型、外部檢索 API、向量資料庫或工具呼叫，也不把心理訊息新增傳到應用程式後端。語音以非空 ASR 文本作選路依據；ASR 不一定等同模型聽到的內容，因此不能宣稱語音危機偵測可靠。
 
-有命中一般指引時，以完整核心提示加上一份小指引，覆寫該次 `response.create.instructions`。沒有命中時使用 session 核心。安全腳本維持 `input: []` 的上下文隔離，不帶文章或案例。參考 [OpenAI Realtime conversation control](https://developers.openai.com/api/docs/guides/realtime-conversations) 與 [response.create](https://developers.openai.com/api/reference/resources/realtime/client-events)。
+每輪以完整核心提示加上本輪指引，覆寫 `response.create.instructions`；core_only 也明確記錄路由。文章索引、正文未開放、未核准案例各用程式選定的固定文字提示（bounded_script）。這些回覆保留對話上下文，讓模型仍可考慮未被規則捕捉的危險訊號；不是先隔離上下文再假設沒有危險。既有已命中的安全腳本才維持 `input: []`，不帶文章或案例。固定文字仍由模型生成，必須用實際對話驗收，不能宣稱完全消除幻覺。參考 [OpenAI Realtime conversation control](https://developers.openai.com/api/docs/guides/realtime-conversations) 與 [response.create](https://developers.openai.com/api/reference/resources/realtime/client-events)。
 
-路由只在記憶體保留一個來自使用者已說內容的主題 enum，供「有相關文章嗎」這類沒有新主題的追問使用。明確換題時不能退回舊主題。沒有結果就明說，不能捏造來源。
+路由在當次記憶體保留主題 enum、細分主題的索引候選 ID，以及已呈現文章的 ID（各最多兩筆、只接受本地 catalog ID），不儲存額外原始對話。只有完成且未取消的回覆才更新文章選擇；失敗、取消與重連不能留下假選擇。「剛才那篇」與「第二篇」依文章 ID 指涉；不明確時請使用者指定，不把整句重新查成其他文章。明確未知新主題不退回舊主題。數量、摘要、作者、建議、怎麼辦等格式詞不能單獨命中文章；常見標題詞降權，情境中的學校等背景詞也不能蓋過排擠等具體主題。這仍是詞彙規則，沒有一般語意理解保證。
 
 UI 原始碼逐位元組維持 B2：沒有新頁面、控制列、上傳器或設定面板。可信原文連結在匹配回覆的 transcript 完成事件中附到原泡泡文字，語音不需要唸網址；不是 AI 生成的連結。取消或不相符的舊回覆不加來源。這個 footer 屬顯示附註，不是模型已讀取文章的證據。
 
@@ -59,7 +59,7 @@ UI 原始碼逐位元組維持 B2：沒有新頁面、控制列、上傳器或�
 ```sh
 npm run knowledge:build  # 更新指引或索引後產生部署 allowlist
 npm run knowledge:check # 生成檔漂移時失敗
-npm run check           # ESLint、47 項測試、production build
+npm run check           # ESLint、57 項測試、production build
 cd research/psych-support
 python3 -m psych_support preflight
 ```
@@ -73,3 +73,25 @@ python3 -m psych_support preflight
 C1 的八組、12 輪真實 Realtime 文字測試中，台詞加入了未確認的「進度跟不上」，文章第二筆也曾因通用詞而誤配到工作倦怠。C2 移除這種台詞補述、預設只回最相關一篇（明確要求兩篇才最多兩篇），並排除更多通用詞。原始初測紀錄保留，不把它覆寫成成功結果。
 
 C1 的危險對話兩輪仍保留即時真人協助且沒有文章 footer，但曾出現 `invalid_value` 的事件錯誤；未保存原始 provider payload，原因不能確定。C2 對送出事件加上短識別碼，只在錯誤中顯示可驗證的來源事件種類，仍不顯示原始訊息或私人輸入。未因此吞掉錯誤或聲稱解決問題。含蓄風險測試有引導真人協助，但未問出預定的直接安全問題，列為嚴格條件缺口。
+
+
+## C3：依 16 組真實 Realtime 測試修正資料邊界
+
+C2 的 T14：推薦霸凌文章後，要求三個具體建議與作者原文，模型卻將未載入的建議歸因於文章，footer 又指向工作過勞。原始失敗紀錄保留於本地 artifacts，不覆寫成成功結果。
+
+C3 順序為：既有安全檢查 → 個人醫療界線 → 資料是否可用 → 文章指涉／主題搜尋 → 一般對話指引。正文與案例的存取能力不由相似分數或使用者「假裝已審核」決定。這次仍是零案例、零正文、54 筆 metadata；不增加資料授權。
+
+新增路由：`article_followup`（已選文章）、`article_selection_needed`（缺少／不明確的選擇）、`article_content_unavailable`（正文、摘要、原文引述未開放）、`source_unavailable`（本專案尚未核准的原始案例）。不能以一般常識冒充文章內容。普通溝通草稿與支持對話仍保留對話歷史與原有語音設定。UI 原始碼不變。
+
+### 可核對的選路證據
+
+在 Preview 網址加上 `?trace=1` 再建立新連線，瀏覽器 console 會出現 `[psych-route]`。預設關閉，不新增 UI、網路分析服務、資料庫或持久化儲存。只記錄：
+
+- 實際送出的 turn/event ID、路由、guide/article ID、knowledge version 與資料 hash。
+- 實際送出的 instructions 長度與非同步 SHA-256；不記錄其全文，也不阻塞送出。
+- 收到的 `response.created` ID，以及 server metadata 是否與本輪送出的值一致。
+- 回覆完成／取消／失敗、播放狀態，以及限制欄位的錯誤 code/param、來源事件種類和分類。
+
+不記完整使用者文字、轉錄、音訊、金鑰、原始 provider message。錯誤分類只是本機模式識別，不能據此認定根因；未知錯誤仍顯示且記為 unclassified。console 仍可能透露會話主題 ID，應只在虛構測試中開啟，不任意分享紀錄。這能證明程式送出的內容雜湊與 server 接受的路由 metadata，不能證明模型在內部正確使用每項資料。
+
+`invalid_value` 在 C2 的 T12 重現，根因仍待相關事件定位。C3 只先限制 client request ID 長度並提供診斷，沒有在未取得證據時把錯誤隱藏或宣稱修復。含蓄安全確認、過快給多項建議與上一題狀態亦仍有待處理，本次不冒稱已解決。

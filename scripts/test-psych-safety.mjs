@@ -101,7 +101,7 @@ test("completed voice ASR uses the same guard; duplicate ASR does not duplicate 
 test("ordinary conversation keeps model context; a new controller has no previous concern", () => {
   const h = harness(); h.text(crisis); h.ctrl.dispose();
   const fresh = harness(); fresh.text("只想聊聊課業");
-  assert.equal(fresh.response().input, undefined); assert.equal(fresh.response().instructions, undefined);
+  assert.equal(fresh.response().input, undefined); assert.match(fresh.response().instructions, /常駐原則/);
   assert.equal(fresh.response().metadata.safety_mode, undefined);
 });
 
