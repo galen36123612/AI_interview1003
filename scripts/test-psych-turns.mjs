@@ -26,7 +26,10 @@ test("text is sent verbatim and gets one response only after server acknowledgem
   assert.equal(h.mic.at(-1), false);
   h.ctrl.handle(ack(item)); h.ctrl.handle(ack(item));
   assert.equal(h.replies().length, 1);
-  assert.deepEqual(h.replies()[0].response.metadata, { turn_id: "t1", input_kind: "text" });
+  assert.equal(h.replies()[0].response.metadata.turn_id, "t1");
+  assert.equal(h.replies()[0].response.metadata.input_kind, "text");
+  assert.equal(h.replies()[0].response.metadata.knowledge_route, "core_only");
+  assert.equal(h.replies()[0].response.metadata.context_mode, "conversation");
 });
 
 test("empty speech does not restart greeting, interrupt playback, or trigger a reply", () => {

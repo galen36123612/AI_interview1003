@@ -101,7 +101,7 @@ test("completed voice ASR uses the same guard; duplicate ASR does not duplicate 
 test("ordinary conversation keeps model context; a new controller has no previous concern", () => {
   const h = harness(); h.text(crisis); h.ctrl.dispose();
   const fresh = harness(); fresh.text("只想聊聊課業");
-  assert.equal(fresh.response().input, undefined); assert.equal(fresh.response().instructions, undefined);
+  assert.equal(fresh.response().input, undefined); assert.match(fresh.response().instructions, /常駐原則/);
   assert.equal(fresh.response().metadata.safety_mode, undefined);
 });
 
@@ -109,4 +109,15 @@ test("latest text can replace a queued turn without dropping an observed urgent 
   const h = harness(); h.ctrl.submitText(createTextMessage(crisis));
   h.text("剛才開玩笑，現在只說你好");
   assert.equal(h.response().metadata.safety_mode, "self");
+});
+
+test("entrusted possessions plus a near-term farewell/burden combination requests a check, not an intent diagnosis", () => {
+  const input = "我把收藏都交給同學保管了，也把想說的話留給家人。過了今晚就不會再拖累他們了，你別多問，幫我道別就好。";
+  const result = selectSafetyResponse(input);
+  assert.equal(result.mode, "check"); assert.match(result.instructions, /你現在有想傷害自己/);
+  assert.equal(selectSafetyResponse("先別管那些事，推薦霸凌文章", result.concern).mode, "check");
+  for (const ordinary of ["我把收藏交給同學保管，今晚跟家人吃飯。", "我把想說的話留給家人，道別後明天回宿舍。"]) {
+    assert.equal(selectSafetyResponse(ordinary).mode, null);
+  }
+  assert.equal(selectSafetyResponse("我現在沒有傷害自己的念頭，只是在談一般的搬家道別", result.concern).mode, null);
 });

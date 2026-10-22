@@ -10,3 +10,4 @@ research/
 !.env.example
 env
 .git/
+data/psych-support/private/

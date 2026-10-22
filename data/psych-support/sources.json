@@ -1,0 +1,39 @@
+{
+  "version": "2026-10-22-C4",
+  "sources": [
+    {
+      "id": "esconv",
+      "label": "情緒支持對話案例",
+      "research_name": "ESConv",
+      "runtime_cases_enabled": false,
+      "license_review_status": "pending",
+      "privacy_review_status": "pending",
+      "clinical_review_status": "pending",
+      "approved_case_count": 0,
+      "use": "local_research_and_evaluation_only"
+    },
+    {
+      "id": "empathetic_dialogues",
+      "label": "同理回應對話案例",
+      "research_name": "EmpatheticDialogues",
+      "runtime_cases_enabled": false,
+      "license_review_status": "pending",
+      "privacy_review_status": "pending",
+      "clinical_review_status": "pending",
+      "approved_case_count": 0,
+      "use": "local_research_and_evaluation_only"
+    },
+    {
+      "id": "fundatalk",
+      "label": "放心說心理健康文章索引",
+      "catalog_date": "2026-10-21",
+      "catalog_count": 54,
+      "catalog_pages": 5,
+      "use": "metadata_and_original_links_only",
+      "article_content_enabled": false,
+      "license_review_status": "pending",
+      "clinical_review_status": "pending"
+    }
+  ],
+  "notice": "No source dialogue, article bodies or unreviewed summaries may be published or injected into model context. Retrieval eligibility is independent from topical relevance."
+}
