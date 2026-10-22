@@ -23,6 +23,12 @@ function explicitConcern(text) {
     || /我[^。！？；\n]{0,20}(?:傷害自己|伤害自己|自殺|自杀)[^。！？；\n]{0,12}(?:念頭|念头|控制不住)/.test(positive)
     || /\bI (?:want|plan|am going) to (?:hurt myself|kill myself|end my life)\b/i.test(positive)) return "self";
   if (/(?:爸爸|媽媽|妈妈|家人|照顧者|照顾者|伴侶|伴侣)[^。！？；\n]{0,18}(?:現在|现在|正在|剛才|刚才|今晚)[^。！？；\n]{0,16}(?:打我|傷害我|伤害我|威脅我|威胁我)/.test(positive)) return "home";
+  // Live B8 regression: possessions entrusted + farewell/last messages + a
+  // near-term claim of no longer being a burden. Ask, never assert intent.
+  const entrusting = /(?:收藏|珍愛的東西|珍惜的東西|重要的物品)[^。！？；\n]{0,20}(?:交給|送給|送走|分給)/.test(text);
+  const farewell = /(?:道別|告別|永別|想說的話[^。！？；\n]{0,12}留給)/.test(text);
+  const finalBurden = /(?:今晚|今天過後|明天)[^。！？；\n]{0,16}(?:不會再|不再)[^。！？；\n]{0,10}(?:拖累|麻煩|負擔)/.test(text);
+  if (entrusting && farewell && finalBurden) return "check";
   // A combination prompts a direct check; do not assert that intent is confirmed.
   if ((/(?:不用再見面|不用再见面|最後一次|最后一次|告別|告别|永別|永别|只說晚安|只说晚安)/.test(text)
       && /(?:重要|珍惜|珍貴|珍贵)[^。！？；\n]{0,14}(?:送人|送走|分給|分给)/.test(text))

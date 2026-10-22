@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-22-C3",
+  "version": "2026-10-22-C4",
   "scope": "Synthetic live Realtime UI regression, not clinical validation",
   "method": "Fresh session per case; typed input; trace=1; capture actual replies, links, response_requested and response_accepted. Never mark a route observed from response wording alone.",
   "cases": [

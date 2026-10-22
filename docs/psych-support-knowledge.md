@@ -1,4 +1,4 @@
-# 心理支持 C3：資料能力邊界與會話選路
+# 心理支持 C4：資料能力邊界與會話選路
 
 本次從心理支持 B2 `88c7203` 另開 `experiment/psych-knowledge-routing`。新 PR 的 base 是 `experiment/psych-support-realtime`，因此只比較這次知識分工的差異。PR #1、PR #2 與 main 都不更新、不合併。使用新 PR 的 Vercel Preview，重新整理並建立新連線。
 
@@ -59,7 +59,7 @@ UI 原始碼逐位元組維持 B2：沒有新頁面、控制列、上傳器或�
 ```sh
 npm run knowledge:build  # 更新指引或索引後產生部署 allowlist
 npm run knowledge:check # 生成檔漂移時失敗
-npm run check           # ESLint、58 項測試、production build
+npm run check           # ESLint、60 項測試、production build
 cd research/psych-support
 python3 -m psych_support preflight
 ```
@@ -97,3 +97,7 @@ C3 順序為：既有安全檢查 → 個人醫療界線 → 資料是否可用 
 `invalid_value` 在 C2 的 T12 重現，根因仍待相關事件定位。C3 只先限制 client request ID 長度並提供診斷，沒有在未取得證據時把錯誤隱藏或宣稱修復。含蓄安全確認、過快給多項建議與上一題狀態亦仍有待處理，本次不冒稱已解決。
 
 來源 footer 另加完成回覆檢查：只有回覆符合本輪允許的固定文字（容許標點、空白及簡短承接差異）才附可信來源並提交文章選擇。若模型改成安全協助、無根據文章內容或其他回覆，不附驗證來源、不把它記成已推薦文章，並在 trace 記 matches_script=false。這不是把原回覆改寫或隱藏，語音與原文字仍保留供檢查；嚴格比對也可能因無害改述而不顯示來源，需持續觀察。
+
+## C4：保留 C3 實測失敗後的針對性修正
+
+C3 的九組回歸中，B8 第一輪含蓄告別沒有命中既有規則，第二輪雖保留完整上下文，模型仍轉成推薦文章。這是實際未通過的安全路由條件，原始紀錄與 trace 保留。C4 對「收藏／珍惜物品交代他人＋告別／留話＋今晚之後不再拖累」的組合觸發 check，先直接確認安全並延續關注，不斷言意圖；普通送物／一般告別不單獨觸發。這只是針對已觀察情境的保守規則，不是通用風險分類，仍需未見措辭、多語言及專業驗證。其餘文章能力與來源路由邏輯維持 C3，回歸結果須按提交版本分開記錄。
