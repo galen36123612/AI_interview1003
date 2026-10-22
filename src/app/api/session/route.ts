@@ -1,4 +1,5 @@
 import { createPsychSession, PREVIEW_MODEL } from "@/app/psych-support/session.mjs";
+import { KNOWLEDGE } from "@/app/psych-support/knowledge.generated.mjs";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -9,9 +10,15 @@ export async function GET() {
     model: PREVIEW_MODEL,
     configured: Boolean(process.env.OPENAI_API_KEY),
     persona: "psychologicalSupport",
-    variant: "B_prompt_explicit_signal_guard",
+    variant: "C_core_file_routing",
     explicitSignalGuardEnabled: true,
-    routerEnabled: false,
+    routerEnabled: true,
+    routerKind: "local_lexical_guidance_and_article_index",
+    offlineResearchRouterEnabled: false,
+    knowledgeVersion: KNOWLEDGE.version,
+    articleIndexCount: KNOWLEDGE.articles.length,
+    approvedCaseCount: KNOWLEDGE.cases.length,
+    articleContentEnabled: false,
     ragEnabled: false,
   }, { headers: { "Cache-Control": "no-store" } });
 }

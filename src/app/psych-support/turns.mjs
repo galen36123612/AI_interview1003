@@ -1,4 +1,5 @@
 import { selectSafetyResponse } from "./safety.mjs";
+import { routeKnowledge, citationFooter } from "./knowledge.mjs";
 
 /** Arbitrate typed and spoken turns in memory. No audio or raw event logging. */
 export const VOICE_TURN_DETECTION = Object.freeze({
@@ -29,16 +30,21 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
   let recordingStartedAt = 0;
   let disposed = false;
   let safetyConcern = null;
+  let knowledgeTopic = null;
   const audioItems = new Set();
   const blocked = new Set();
   const handled = new Set();
   const deleted = new Set();
   const cancelledResponses = new Set();
 
-  const safetyFor = (text) => {
+  const contextFor = (text) => {
     const result = selectSafetyResponse(text, safetyConcern);
     safetyConcern = result.concern;
-    return result.mode ? { safety: result.mode, instructions: result.instructions } : {};
+    if (result.mode) return { safety: result.mode, instructions: result.instructions };
+    const knowledge = routeKnowledge(text, knowledgeTopic);
+    knowledgeTopic = knowledge.topic;
+    return knowledge.instructions ? { knowledgeRoute: knowledge.route, instructions: knowledge.instructions,
+      references: knowledge.references } : {};
   };
 
   const emit = (event) => { if (!disposed) send(event); };
@@ -76,6 +82,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     emit({ type: "response.create", event_id: `reply_${turn.id}`, response: {
       metadata: { turn_id: turn.id, input_kind: turn.kind },
       ...(turn.instructions ? { instructions: turn.instructions } : {}),
+      ...(turn.knowledgeRoute ? { metadata: { turn_id: turn.id, input_kind: turn.kind, knowledge_route: turn.knowledgeRoute } } : {}),
       ...(turn.safety ? { input: [], max_output_tokens: 1536,
         metadata: { turn_id: turn.id, input_kind: turn.kind, safety_mode: turn.safety } } : {}),
     } });
@@ -100,7 +107,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       textHold = true; drafting = false; recording = false;
       blockVoice(); syncMicrophone(); onNotice("");
       pending = { id: item.id, kind: "text", ready: false,
-        ...safetyFor(item.content?.filter((c) => c.type === "input_text").map((c) => c.text).join("\n") || "") };
+        ...contextFor(item.content?.filter((c) => c.type === "input_text").map((c) => c.text).join("\n") || "") };
       cancelActive();
       emit({ type: "input_audio_buffer.clear" });
       // Response is requested only after the server acknowledges this exact item.
@@ -137,6 +144,14 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       if (disposed) return false;
       const type = event.type;
       if (cancelledResponses.has(event.response_id) && /^response\.(output_audio_transcript|audio_transcript|output_text|text)\./.test(type)) return false;
+      // Append trusted source links to the existing message text only. The UI and
+      // spoken audio stay unchanged; cancelled/stale responses get no citations.
+      if (/^response\.(output_audio_transcript|audio_transcript|output_text|text)\.done$/.test(type)
+        && active && !active.cancelled && event.response_id === active.responseId && active.references?.length) {
+        const footer = citationFooter(active.references);
+        const field = typeof event.transcript === "string" ? "transcript" : "text";
+        if (typeof event[field] === "string" && !event[field].endsWith(footer)) event[field] += footer;
+      }
       if (["conversation.item.added", "conversation.item.created"].includes(type)) {
         const item = event.item;
         if (pending?.kind === "text" && item?.id === pending.id) {
@@ -163,7 +178,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
           discard(id); onNotice("沒有聽清楚，請再說一次或輸入文字。"); return false;
         }
         handled.add(id); onNotice("");
-        enqueue({ id, kind: "voice", ready: true, ...safetyFor(text) });
+        enqueue({ id, kind: "voice", ready: true, ...contextFor(text) });
       }
       if (type === "response.created") {
         const response = event.response;
@@ -189,7 +204,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       return true;
     },
     dispose() {
-      disposed = true; pending = null; active = null; safetyConcern = null;
+      disposed = true; pending = null; active = null; safetyConcern = null; knowledgeTopic = null;
       audioItems.clear(); blocked.clear(); handled.clear(); deleted.clear(); cancelledResponses.clear();
     },
   };
