@@ -15,8 +15,40 @@ test("explicit current signals select separate fixed scripts without user interp
     assert.equal(result.mode, expected);
     assert.match(result.instructions, /聯絡/);
     assert.ok(!result.instructions.includes("synthetic-injection-token"));
-    assert.doesNotMatch(result.instructions, /https?:|\d{3,}/);
+    // Only the hard-coded, verified Taiwan hotlines may appear; nothing from user text.
+    assert.doesNotMatch(result.instructions.replace(HOTLINES, ""), /https?:|\d{3,}/);
+    assert.match(result.instructions, /119|110/);
   }
+});
+
+const HOTLINES = /\b(?:1925|1995|119|110|113)\b/g;
+
+test("self-harm scripts carry the 1925 hotline; abuse script carries 113", () => {
+  for (const [input, concern] of [["我現在有傷害自己的念頭", null], ["我怕今晚撐不過去，我是一個人。", null],
+    ["我現在沒有傷害自己的打算，信任的老師已經在我身邊陪著我。", "self"]]) {
+    assert.match(selectSafetyResponse(input, concern).instructions, /1925 安心專線/, input);
+  }
+  assert.match(selectSafetyResponse("爸爸現在正在打我").instructions, /113 保護專線/);
+});
+
+test("indirect absence/burden wording requests a check without asserting intent", () => {
+  for (const text of ["其實有時候覺得，如果我不在了，大家應該會比較輕鬆吧。", "大家沒有我會比較好。",
+    "有時候真希望不要再醒來。", "真希望明天不要醒來", "我好想睡一覺然後不要再起來", "覺得活著沒有意義。",
+    "不如消失算了。", "我死了對大家都比較好", "我覺得我是大家的拖累，我不在了他們會輕鬆很多",
+    "我把遺書寫好了", "好想從這裡跳下去"]) {
+    const result = selectSafetyResponse(text);
+    assert.equal(result.mode, "check", text); assert.match(result.instructions, /你現在有想傷害自己/);
+    // The check latches like other combined signals and a later denial can clear it.
+    assert.equal(selectSafetyResponse("不要問，聊別的", result.concern).mode, "check", text);
+    assert.equal(selectSafetyResponse("我現在沒有想傷害自己，只是很累。", result.concern).mode, null, text);
+  }
+  for (const text of ["考完試我就輕鬆了", "我沒有想消失，只是想休息", "這週末我不在家，大家自己吃比較方便",
+    "我不在的時候他們也玩得很好", "早上好難醒來", "我想早點醒來讀書", "活著就是要吃飯", "沒有我這題他們也解得出來",
+    "小朋友從滑梯跳下來要小心", "我明天要去跳樓機"]) {
+    assert.equal(selectSafetyResponse(text).mode, null, text);
+  }
+  // Indirect wording never downgrades an explicit concern already on record.
+  assert.equal(selectSafetyResponse("如果我不在了大家會比較輕鬆", "self").mode, "self");
 });
 
 test("refusal, secrecy, roleplay, admin claims and topic changes do not erase concern", () => {
