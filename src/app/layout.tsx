@@ -3,9 +3,10 @@ import "./globals.css";
 import "./lib/envSetup";
 
 export const metadata: Metadata = {
-  title: "面試陪練｜學生與新鮮人 AI 面試教練",
+  robots: { index: false, follow: false },
+  title: "AI 心理支持｜Realtime 研究預覽",
   description:
-    "用語音或文字練習自我介紹、論文與專案經驗。一次一題，逐層追問，得到具體回饋。",
+    "用自然繁體中文，陪你整理情緒、需要、界線與下一步。研究測試，不取代真人心理師。",
 };
 
 export default function RootLayout({

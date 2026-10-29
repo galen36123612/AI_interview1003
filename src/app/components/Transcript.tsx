@@ -5,10 +5,11 @@ import ReactMarkdown from "react-markdown";
 import Image from "next/image";
 import { Check, Copy } from "lucide-react";
 
-import { useTranscript } from "@/app/contexts/TranscriptContext";
 import { TranscriptItem } from "@/app/types";
 
 export interface TranscriptProps {
+  transcriptItems: TranscriptItem[];
+  onToggleItemExpand?: (id: string) => void;
   userText: string;
   setUserText: (value: string) => void;
   onSendMessage: () => void;
@@ -190,6 +191,8 @@ function pickTargetEventId(item: TranscriptItem): string {
 }
 
 function Transcript({
+  transcriptItems,
+  onToggleItemExpand = () => {},
   userText,
   setUserText,
   onSendMessage,
@@ -201,7 +204,6 @@ function Transcript({
   onRate,
   ratingsByTargetId,
 }: TranscriptProps) {
-  const { transcriptItems, toggleTranscriptItemExpand } = useTranscript();
   const transcriptRef = React.useRef<HTMLDivElement | null>(null);
   const previousItemsRef = React.useRef<TranscriptItem[]>([]);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
@@ -301,7 +303,7 @@ function Transcript({
                     className={`flex items-center whitespace-pre-wrap font-mono text-sm text-gray-800 ${
                       data ? "cursor-pointer" : ""
                     }`}
-                    onClick={() => data && toggleTranscriptItemExpand(itemId)}
+                    onClick={() => data && onToggleItemExpand(itemId)}
                   >
                     {data && (
                       <span

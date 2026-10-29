@@ -1,0 +1,10 @@
+{
+  "purpose": "local research handoff; raw files intentionally excluded",
+  "required_raw_paths": [
+    "data/raw/ESConv.json",
+    "data/raw/train.csv"
+  ],
+  "reference_summary": "reference/audit_summary.json",
+  "phase": "Phase 1 only",
+  "release_status": "NOT_PRODUCTION_READY"
+}

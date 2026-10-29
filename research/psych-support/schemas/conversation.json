@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "normalized_conversation",
+  "type": "object",
+  "properties": {
+    "dataset": {
+      "enum": [
+        "ESConv",
+        "EmpatheticDialogues"
+      ]
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "group_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "turns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "source_speaker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "audit": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "index",
+          "role",
+          "source_speaker",
+          "content",
+          "audit"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "audit": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "dataset",
+    "source_id",
+    "group_id",
+    "turns",
+    "audit"
+  ],
+  "additionalProperties": false
+}

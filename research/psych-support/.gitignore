@@ -1,0 +1,19 @@
+# Add/merge into repository .gitignore; do not blindly overwrite the repo file.
+data/raw/
+data/processed/
+data/holdout/
+data/private/
+*.env
+.env
+.env.*
+!.env.example
+**/raw_transcripts/
+**/sensitive_logs/
+*.secret
+
+# Reference cards contain source dialogue, not public fixtures.
+reference/sample_cards.jsonl
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store

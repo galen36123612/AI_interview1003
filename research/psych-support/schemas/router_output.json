@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "router_output",
+  "type": "object",
+  "properties": {
+    "provisional_need": {
+      "enum": [
+        "clarification",
+        "safety_review_required",
+        "repair",
+        "emotional_support",
+        "constraints",
+        "practical_help",
+        "closure",
+        "positive_sharing"
+      ]
+    },
+    "primary_action": {
+      "enum": [
+        "reflect",
+        "paraphrase",
+        "clarify",
+        "affirm",
+        "suggest",
+        "inform",
+        "repair_misunderstanding",
+        "close",
+        "safety_protocol"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "message_id",
+          "summary"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 10
+    },
+    "uncertainty": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "safety_status": {
+      "enum": [
+        "unknown",
+        "high",
+        "clear_for_general_support"
+      ]
+    },
+    "general_support_blocked": {
+      "type": "boolean"
+    },
+    "case_retrieval": {
+      "type": "object",
+      "properties": {
+        "requested": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "requested",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "resource_retrieval": {
+      "type": "object",
+      "properties": {
+        "requested": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "requested",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "release_status": {
+      "const": "NOT_PRODUCTION_READY"
+    }
+  },
+  "required": [
+    "provisional_need",
+    "primary_action",
+    "evidence",
+    "uncertainty",
+    "safety_status",
+    "general_support_blocked",
+    "case_retrieval",
+    "resource_retrieval",
+    "release_status"
+  ],
+  "additionalProperties": false
+}

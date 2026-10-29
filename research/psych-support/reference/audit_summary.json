@@ -1,0 +1,188 @@
+{
+  "scope": "Complete structural counts plus selected developmental content examples. Not a row-by-row clinical, privacy, or license review.",
+  "inputs": {
+    "esconv": {
+      "filename": "ESConv.json",
+      "sha256": "aa0556c5b330562ba009c1cd5137486bfa2a7255f33225a6524cd58f7efdd9af",
+      "bytes": 9017487
+    },
+    "ed": {
+      "filename": "train.csv",
+      "sha256": "35053a4e1ef39f6766e7706c9a3c97b8fa090cfb28d32087a8316a606ab1a7dd",
+      "bytes": 17394764
+    }
+  },
+  "esconv": {
+    "conversations": 1300,
+    "utterances": 38365,
+    "speakers": {
+      "seeker": 19989,
+      "supporter": 18376
+    },
+    "observed_strategy_counts": {
+      "Question": 3801,
+      "Others": 3341,
+      "Providing Suggestions": 2954,
+      "Affirmation and Reassurance": 2827,
+      "Self-disclosure": 1713,
+      "Reflection of feelings": 1436,
+      "Information": 1215,
+      "Restatement or Paraphrasing": 1089
+    },
+    "conversation_emotion_counts": {
+      "anxiety": 354,
+      "anger": 111,
+      "fear": 95,
+      "depression": 334,
+      "sadness": 308,
+      "disgust": 40,
+      "shame": 42,
+      "nervousness": 13,
+      "pain": 1,
+      "jealousy": 1,
+      "guilt": 1
+    },
+    "conversation_problem_counts": {
+      "job crisis": 280,
+      "problems with friends": 179,
+      "ongoing depression": 351,
+      "breakup with partner": 239,
+      "academic pressure": 156,
+      "conflict with parents": 10,
+      "Procrastination": 13,
+      "Alcohol Abuse": 12,
+      "Issues with Parents": 8,
+      "Sleep Problems": 28,
+      "Appearance Anxiety": 12,
+      "School Bullying": 2,
+      "Issues with Children": 10
+    },
+    "seeker_survey_missing_counts": {
+      "empathy": 150,
+      "relevance": 150,
+      "initial_emotion_intensity": 0,
+      "final_emotion_intensity": 150
+    },
+    "conversations_with_adjacent_supporter_messages": 996,
+    "contiguous_supporter_blocks": 15325,
+    "supporter_blocks_at_conversation_start": 683,
+    "strategy_counts_are_not_quality_or_recommendation_counts": true
+  },
+  "empathetic_dialogues_uploaded_train": {
+    "physical_data_rows": 84169,
+    "conversations": 19533,
+    "emotion_label_count": 32,
+    "conversation_emotion_counts": {
+      "sentimental": 525,
+      "afraid": 634,
+      "proud": 686,
+      "faithful": 377,
+      "terrified": 629,
+      "joyful": 602,
+      "angry": 695,
+      "sad": 667,
+      "jealous": 585,
+      "grateful": 645,
+      "prepared": 592,
+      "embarrassed": 563,
+      "excited": 750,
+      "annoyed": 667,
+      "lonely": 641,
+      "ashamed": 493,
+      "guilty": 622,
+      "surprised": 1004,
+      "nostalgic": 599,
+      "confident": 616,
+      "furious": 615,
+      "disappointed": 598,
+      "caring": 527,
+      "trusting": 515,
+      "disgusted": 619,
+      "anticipating": 606,
+      "anxious": 614,
+      "hopeful": 619,
+      "content": 576,
+      "impressed": 621,
+      "apprehensive": 462,
+      "devastated": 569
+    },
+    "utterance_emotion_counts": {
+      "sentimental": 2298,
+      "afraid": 2728,
+      "proud": 2933,
+      "faithful": 1660,
+      "terrified": 2708,
+      "joyful": 2555,
+      "angry": 2991,
+      "sad": 2883,
+      "jealous": 2540,
+      "grateful": 2736,
+      "prepared": 2529,
+      "embarrassed": 2407,
+      "excited": 3218,
+      "annoyed": 2880,
+      "lonely": 2751,
+      "ashamed": 2191,
+      "guilty": 2675,
+      "surprised": 4310,
+      "nostalgic": 2595,
+      "confident": 2657,
+      "furious": 2663,
+      "disappointed": 2567,
+      "caring": 2292,
+      "trusting": 2270,
+      "disgusted": 2663,
+      "anticipating": 2632,
+      "anxious": 2651,
+      "hopeful": 2638,
+      "content": 2479,
+      "impressed": 2630,
+      "apprehensive": 2014,
+      "devastated": 2425
+    },
+    "dialogue_length_counts": {
+      "6": 463,
+      "5": 3421,
+      "4": 15136,
+      "1": 2,
+      "7": 218,
+      "8": 268,
+      "3": 20,
+      "2": 5
+    },
+    "speaker_id_count": 810,
+    "single_utterance_conversations": [
+      "hit:6_conv:13",
+      "hit:296_conv:593"
+    ],
+    "even_index_listener_messages": 40254,
+    "context_label_constant_within_each_conversation": true,
+    "prompt_constant_within_each_conversation": true,
+    "all_multiturn_conversations_alternate_between_two_speakers": true,
+    "available_columns": [
+      "conv_id",
+      "utterance_idx",
+      "context",
+      "prompt",
+      "speaker_idx",
+      "utterance",
+      "selfeval",
+      "tags"
+    ],
+    "no_explicit_strategy_field": true,
+    "supplied_split": "train filename only; no official validation/test files supplied"
+  },
+  "csv_parser_comparison": {
+    "source_compatible_quote_none_rows": 84169,
+    "default_csv_reader_rows": 76673,
+    "default_csv_reader_non_8_column_records": 5,
+    "warning": "Default quote handling merges physical source records; do not use those parsed rows for indexing.",
+    "official_loader_reference": "https://github.com/facebookresearch/EmpatheticDialogues/blob/main/empchat/datasets/empchat.py"
+  },
+  "production_approval": {
+    "approved_in_this_audit": 0,
+    "meaning": "No examples underwent professional review or deployment approval; not a claim that no examples are usable.",
+    "license_status": "not established by these uploaded data files",
+    "clinical_risk_labels_available": false
+  }
+}
