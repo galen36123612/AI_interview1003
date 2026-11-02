@@ -23,7 +23,7 @@ export function describeRealtimeError(error) {
 }
 
 /** Hard output budget for ordinary turns (audio + text tokens). Safety scripts set their own. */
-export const REPLY_MAX_OUTPUT_TOKENS = 512;
+export const REPLY_MAX_OUTPUT_TOKENS = 768;
 /** Pause before an ordinary reply so it does not start the instant the user stops. Safety replies never wait. */
 export const REPLY_DELAY_MS = 1500;
 

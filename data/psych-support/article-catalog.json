@@ -8,7 +8,12 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "rTMS",
+      "經顱磁刺激",
+      "治療",
+      "憂鬱"
+    ]
   },
   {
     "id": "boundaries-with-parents-after-marriage",
@@ -23,7 +28,10 @@
       "父母",
       "伴侶",
       "溝通",
-      "界線"
+      "界線",
+      "婆媳",
+      "家庭",
+      "結婚"
     ]
   },
   {
@@ -37,7 +45,11 @@
     "eligible_for_content_rag": false,
     "keywords": [
       "原生家庭",
-      "父母"
+      "父母",
+      "家庭",
+      "童年",
+      "成長",
+      "爸媽"
     ]
   },
   {
@@ -52,7 +64,11 @@
     "keywords": [
       "海外",
       "留學",
-      "文化"
+      "文化",
+      "出國",
+      "國外",
+      "歸屬感",
+      "人際"
     ]
   },
   {
@@ -64,7 +80,12 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "打扮",
+      "外貌",
+      "羞恥",
+      "不自在"
+    ]
   },
   {
     "id": "childhood-attachment-style-guide",
@@ -75,7 +96,13 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "原生家庭",
+      "依附",
+      "童年",
+      "創傷",
+      "父母"
+    ]
   },
   {
     "id": "autonomic-nervous-system-dysfunction",
@@ -86,7 +113,12 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "自律神經",
+      "失調",
+      "心悸",
+      "頭暈"
+    ]
   },
   {
     "id": "why-we-feel-anxious-about-appearance",
@@ -97,7 +129,13 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "外貌",
+      "容貌",
+      "身材",
+      "長相",
+      "焦慮"
+    ]
   },
   {
     "id": "couple-therapy-family-connection",
@@ -108,7 +146,13 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "婚姻",
+      "伴侶",
+      "夫妻",
+      "親子",
+      "伴侶治療"
+    ]
   },
   {
     "id": "understanding-oppositional-defiant-disorder-guide",
@@ -119,7 +163,13 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "叛逆",
+      "小孩",
+      "教養",
+      "頂嘴",
+      "對立反抗"
+    ]
   },
   {
     "id": "supporting-those-who-self-harm",
@@ -130,7 +180,11 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "自殘",
+      "自我傷害",
+      "割腕"
+    ]
   },
   {
     "id": "hoarding-disorder-causes-treatment",
@@ -141,7 +195,11 @@
     "source_page": 1,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "囤積",
+      "丟不掉",
+      "雜物"
+    ]
   },
   {
     "id": "fundatalk-certified-telehealth-providers",
@@ -152,7 +210,11 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "認證",
+      "線上諮商",
+      "專業"
+    ]
   },
   {
     "id": "causes-of-eating-disorder-anorexia",
@@ -163,7 +225,13 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "厭食",
+      "飲食",
+      "不吃",
+      "體重",
+      "暴食"
+    ]
   },
   {
     "id": "how-to-stop-school-bullying",
@@ -179,7 +247,10 @@
       "排擠",
       "被欺負",
       "書包被藏",
-      "報復"
+      "報復",
+      "同學",
+      "被排擠",
+      "欺負"
     ]
   },
   {
@@ -191,7 +262,13 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "腦霧",
+      "記不住",
+      "專注",
+      "反應變慢",
+      "腦袋空"
+    ]
   },
   {
     "id": "how-to-help-depression",
@@ -202,7 +279,13 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "陪伴",
+      "憂鬱",
+      "家人",
+      "男友",
+      "女友"
+    ]
   },
   {
     "id": "married-women-new-year-stress",
@@ -213,7 +296,12 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "過年",
+      "除夕",
+      "回誰家",
+      "婆家"
+    ]
   },
   {
     "id": "signs-of-hypochondriasis",
@@ -224,7 +312,12 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "慮病",
+      "一直生病",
+      "怕生病",
+      "檢查"
+    ]
   },
   {
     "id": "social-anxiety-symptoms-causes",
@@ -238,7 +331,10 @@
     "keywords": [
       "社交",
       "社恐",
-      "焦慮"
+      "焦慮",
+      "怕人",
+      "不敢講話",
+      "害羞"
     ]
   },
   {
@@ -258,7 +354,9 @@
       "國中",
       "高中",
       "拒學",
-      "不想上學"
+      "不想上學",
+      "翹課",
+      "青春期"
     ]
   },
   {
@@ -270,7 +368,12 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "產後",
+      "夫妻",
+      "吵架",
+      "有小孩"
+    ]
   },
   {
     "id": "acute-stress-disorder-overviews",
@@ -281,7 +384,12 @@
     "source_page": 2,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "壓力",
+      "急性壓力",
+      "創傷",
+      "PTSD"
+    ]
   },
   {
     "id": "understanding-depression-signs",
@@ -294,7 +402,10 @@
     "eligible_for_content_rag": false,
     "keywords": [
       "憂鬱",
-      "低落"
+      "低落",
+      "難過",
+      "不開心",
+      "心情不好"
     ]
   },
   {
@@ -309,7 +420,9 @@
     "keywords": [
       "諮商",
       "心理師",
-      "第一次"
+      "第一次",
+      "要不要諮商",
+      "心理治療"
     ]
   },
   {
@@ -321,7 +434,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "快樂",
+      "沒感覺",
+      "麻木",
+      "提不起勁"
+    ]
   },
   {
     "id": "anxious-attachment-signals",
@@ -335,7 +453,10 @@
     "keywords": [
       "依附",
       "訊息",
-      "等待"
+      "等待",
+      "已讀",
+      "等回覆",
+      "不安"
     ]
   },
   {
@@ -347,7 +468,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "老人",
+      "長輩",
+      "老年",
+      "憂鬱"
+    ]
   },
   {
     "id": "mental-fatigue-symptoms",
@@ -358,7 +484,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "腦疲勞",
+      "疲勞",
+      "好累",
+      "用腦"
+    ]
   },
   {
     "id": "aspergers-in-women-and-girls",
@@ -369,7 +500,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "亞斯",
+      "自閉",
+      "特質",
+      "女生"
+    ]
   },
   {
     "id": "generalized-anxiety-disorder",
@@ -380,7 +516,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "焦慮",
+      "擔心",
+      "緊張",
+      "停不下來"
+    ]
   },
   {
     "id": "eldest-daughter-syndrome",
@@ -391,7 +532,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "長女",
+      "大姐",
+      "懂事",
+      "責任"
+    ]
   },
   {
     "id": "high-functioning-anxiety-self-relief-treatment",
@@ -402,7 +548,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "焦慮",
+      "完美主義",
+      "停不下來",
+      "高功能"
+    ]
   },
   {
     "id": "insomnia-and-sleep-disorders-treatments",
@@ -416,7 +567,9 @@
     "keywords": [
       "睡眠",
       "失眠",
-      "睡不著"
+      "睡不著",
+      "睡不好",
+      "熬夜"
     ]
   },
   {
@@ -428,7 +581,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "躁鬱",
+      "雙相",
+      "情緒起伏",
+      "躁"
+    ]
   },
   {
     "id": "EAP-employee-assistance-program",
@@ -439,7 +597,12 @@
     "source_page": 3,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "EAP",
+      "員工",
+      "公司",
+      "職場"
+    ]
   },
   {
     "id": "depression-symptoms-guide",
@@ -450,7 +613,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "憂鬱",
+      "症狀",
+      "低落",
+      "身體不適"
+    ]
   },
   {
     "id": "melatonin-sleep-guide",
@@ -461,7 +629,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "褪黑激素",
+      "助眠",
+      "失眠",
+      "睡眠"
+    ]
   },
   {
     "id": "depression-treatment-options",
@@ -472,7 +645,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "憂鬱",
+      "治療",
+      "藥物",
+      "心理治療"
+    ]
   },
   {
     "id": "major-depressive-disorder-symptoms-treatment",
@@ -483,7 +661,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "躺床",
+      "不想出門",
+      "沒動力",
+      "憂鬱"
+    ]
   },
   {
     "id": "ocd-symptoms-causes",
@@ -494,7 +677,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "強迫",
+      "潔癖",
+      "反覆檢查",
+      "怕髒"
+    ]
   },
   {
     "id": "session-summary-introduction",
@@ -505,7 +693,10 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "會談小結",
+      "諮商紀錄"
+    ]
   },
   {
     "id": "Adult-ADHD",
@@ -516,7 +707,14 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "ADHD",
+      "分心",
+      "拖延",
+      "注意力",
+      "衝動",
+      "過動"
+    ]
   },
   {
     "id": "ptsd-symptoms-and-treatment",
@@ -527,7 +725,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "PTSD",
+      "創傷",
+      "惡夢",
+      "閃回"
+    ]
   },
   {
     "id": "panic-disorder-symptoms-diagnosis",
@@ -538,7 +741,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "恐慌",
+      "心跳加速",
+      "喘不過氣",
+      "發作"
+    ]
   },
   {
     "id": "depression-severity-levels",
@@ -549,7 +757,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "憂鬱",
+      "輕度",
+      "重度",
+      "分級"
+    ]
   },
   {
     "id": "family-mental-health-support-guide",
@@ -560,7 +773,12 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "家人",
+      "精神疾病",
+      "身心科",
+      "家屬"
+    ]
   },
   {
     "id": "male-anxiety-patterns",
@@ -571,7 +789,13 @@
     "source_page": 4,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "男性",
+      "暴怒",
+      "生悶氣",
+      "情緒失控",
+      "焦慮"
+    ]
   },
   {
     "id": "messaging-anxiety-boundaries",
@@ -585,7 +809,10 @@
     "keywords": [
       "訊息",
       "回覆",
-      "界線"
+      "界線",
+      "回訊息",
+      "已讀不回",
+      "訊息焦慮"
     ]
   },
   {
@@ -597,7 +824,12 @@
     "source_page": 5,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "留學",
+      "海外",
+      "文化衝擊",
+      "適應"
+    ]
   },
   {
     "id": "cross-cultural-adaptation",
@@ -608,7 +840,12 @@
     "source_page": 5,
     "content_mode": "metadata_only",
     "eligible_for_content_rag": false,
-    "keywords": []
+    "keywords": [
+      "跨文化",
+      "職場溝通",
+      "文化差異",
+      "外商"
+    ]
   },
   {
     "id": "workplace-burnout-signs",
@@ -623,7 +860,10 @@
       "工作",
       "職場",
       "過勞",
-      "倦怠"
+      "倦怠",
+      "加班",
+      "離職",
+      "老闆"
     ]
   },
   {
@@ -638,7 +878,9 @@
     "keywords": [
       "覺察",
       "情緒",
-      "內耗"
+      "內耗",
+      "自我覺察",
+      "迷惘"
     ]
   },
   {
@@ -654,7 +896,10 @@
       "預約",
       "流程",
       "費用",
-      "諮商"
+      "諮商",
+      "線上諮商",
+      "價格",
+      "第一次諮商"
     ]
   }
 ]

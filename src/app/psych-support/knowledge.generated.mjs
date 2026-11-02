@@ -53,7 +53,12 @@ export const KNOWLEDGE = {
       "author": "周呈叡 醫師",
       "date_published": "2026-10-08T06:21:57.630Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "rTMS",
+        "經顱磁刺激",
+        "治療",
+        "憂鬱"
+      ]
     },
     {
       "id": "boundaries-with-parents-after-marriage",
@@ -66,7 +71,10 @@ export const KNOWLEDGE = {
         "父母",
         "伴侶",
         "溝通",
-        "界線"
+        "界線",
+        "婆媳",
+        "家庭",
+        "結婚"
       ]
     },
     {
@@ -78,7 +86,11 @@ export const KNOWLEDGE = {
       "source_page": 1,
       "keywords": [
         "原生家庭",
-        "父母"
+        "父母",
+        "家庭",
+        "童年",
+        "成長",
+        "爸媽"
       ]
     },
     {
@@ -91,7 +103,11 @@ export const KNOWLEDGE = {
       "keywords": [
         "海外",
         "留學",
-        "文化"
+        "文化",
+        "出國",
+        "國外",
+        "歸屬感",
+        "人際"
       ]
     },
     {
@@ -101,7 +117,12 @@ export const KNOWLEDGE = {
       "author": "陳柔安 心理師",
       "date_published": "2026-06-12T15:07:26.137Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "打扮",
+        "外貌",
+        "羞恥",
+        "不自在"
+      ]
     },
     {
       "id": "childhood-attachment-style-guide",
@@ -110,7 +131,13 @@ export const KNOWLEDGE = {
       "author": "曾揚元 心理師",
       "date_published": "2026-05-31T12:40:52.143Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "原生家庭",
+        "依附",
+        "童年",
+        "創傷",
+        "父母"
+      ]
     },
     {
       "id": "autonomic-nervous-system-dysfunction",
@@ -119,7 +146,12 @@ export const KNOWLEDGE = {
       "author": "周呈叡 醫師",
       "date_published": "2026-05-08T13:15:30.543Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "自律神經",
+        "失調",
+        "心悸",
+        "頭暈"
+      ]
     },
     {
       "id": "why-we-feel-anxious-about-appearance",
@@ -128,7 +160,13 @@ export const KNOWLEDGE = {
       "author": "洪子琁 心理師",
       "date_published": "2026-04-27T05:59:40.553Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "外貌",
+        "容貌",
+        "身材",
+        "長相",
+        "焦慮"
+      ]
     },
     {
       "id": "couple-therapy-family-connection",
@@ -137,7 +175,13 @@ export const KNOWLEDGE = {
       "author": "吳泓熹 醫師",
       "date_published": "2026-04-26T12:58:39.587Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "婚姻",
+        "伴侶",
+        "夫妻",
+        "親子",
+        "伴侶治療"
+      ]
     },
     {
       "id": "understanding-oppositional-defiant-disorder-guide",
@@ -146,7 +190,13 @@ export const KNOWLEDGE = {
       "author": "蔡佩蓁 醫師",
       "date_published": "2026-04-24T15:03:10.193Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "叛逆",
+        "小孩",
+        "教養",
+        "頂嘴",
+        "對立反抗"
+      ]
     },
     {
       "id": "supporting-those-who-self-harm",
@@ -155,7 +205,11 @@ export const KNOWLEDGE = {
       "author": "曾揚元 心理師",
       "date_published": "2026-04-22T14:56:32.017Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "自殘",
+        "自我傷害",
+        "割腕"
+      ]
     },
     {
       "id": "hoarding-disorder-causes-treatment",
@@ -164,7 +218,11 @@ export const KNOWLEDGE = {
       "author": "陳冠儒 心理師",
       "date_published": "2026-04-10T04:03:07.943Z",
       "source_page": 1,
-      "keywords": []
+      "keywords": [
+        "囤積",
+        "丟不掉",
+        "雜物"
+      ]
     },
     {
       "id": "fundatalk-certified-telehealth-providers",
@@ -173,7 +231,11 @@ export const KNOWLEDGE = {
       "author": "放心說編輯部",
       "date_published": "2026-04-08T13:12:02.833Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "認證",
+        "線上諮商",
+        "專業"
+      ]
     },
     {
       "id": "causes-of-eating-disorder-anorexia",
@@ -182,7 +244,13 @@ export const KNOWLEDGE = {
       "author": "邱韻芝 醫師",
       "date_published": "2026-04-02T14:43:39.147Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "厭食",
+        "飲食",
+        "不吃",
+        "體重",
+        "暴食"
+      ]
     },
     {
       "id": "how-to-stop-school-bullying",
@@ -196,7 +264,10 @@ export const KNOWLEDGE = {
         "排擠",
         "被欺負",
         "書包被藏",
-        "報復"
+        "報復",
+        "同學",
+        "被排擠",
+        "欺負"
       ]
     },
     {
@@ -206,7 +277,13 @@ export const KNOWLEDGE = {
       "author": "簡婉曦 醫師",
       "date_published": "2026-02-13T10:36:14.240Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "腦霧",
+        "記不住",
+        "專注",
+        "反應變慢",
+        "腦袋空"
+      ]
     },
     {
       "id": "how-to-help-depression",
@@ -215,7 +292,13 @@ export const KNOWLEDGE = {
       "author": "蔡佩蓁 醫師",
       "date_published": "2026-02-07T10:14:13.547Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "陪伴",
+        "憂鬱",
+        "家人",
+        "男友",
+        "女友"
+      ]
     },
     {
       "id": "married-women-new-year-stress",
@@ -224,7 +307,12 @@ export const KNOWLEDGE = {
       "author": "陳柔安 心理師",
       "date_published": "2026-01-20T14:43:43.557Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "過年",
+        "除夕",
+        "回誰家",
+        "婆家"
+      ]
     },
     {
       "id": "signs-of-hypochondriasis",
@@ -233,7 +321,12 @@ export const KNOWLEDGE = {
       "author": "周呈叡 醫師",
       "date_published": "2026-01-13T15:03:43.250Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "慮病",
+        "一直生病",
+        "怕生病",
+        "檢查"
+      ]
     },
     {
       "id": "social-anxiety-symptoms-causes",
@@ -245,7 +338,10 @@ export const KNOWLEDGE = {
       "keywords": [
         "社交",
         "社恐",
-        "焦慮"
+        "焦慮",
+        "怕人",
+        "不敢講話",
+        "害羞"
       ]
     },
     {
@@ -263,7 +359,9 @@ export const KNOWLEDGE = {
         "國中",
         "高中",
         "拒學",
-        "不想上學"
+        "不想上學",
+        "翹課",
+        "青春期"
       ]
     },
     {
@@ -273,7 +371,12 @@ export const KNOWLEDGE = {
       "author": "曾揚元 心理師",
       "date_published": "2025-12-10T14:01:41.593Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "產後",
+        "夫妻",
+        "吵架",
+        "有小孩"
+      ]
     },
     {
       "id": "acute-stress-disorder-overviews",
@@ -282,7 +385,12 @@ export const KNOWLEDGE = {
       "author": "邱韻芝 醫師",
       "date_published": "2025-12-01T15:16:04.347Z",
       "source_page": 2,
-      "keywords": []
+      "keywords": [
+        "壓力",
+        "急性壓力",
+        "創傷",
+        "PTSD"
+      ]
     },
     {
       "id": "understanding-depression-signs",
@@ -293,7 +401,10 @@ export const KNOWLEDGE = {
       "source_page": 2,
       "keywords": [
         "憂鬱",
-        "低落"
+        "低落",
+        "難過",
+        "不開心",
+        "心情不好"
       ]
     },
     {
@@ -306,7 +417,9 @@ export const KNOWLEDGE = {
       "keywords": [
         "諮商",
         "心理師",
-        "第一次"
+        "第一次",
+        "要不要諮商",
+        "心理治療"
       ]
     },
     {
@@ -316,7 +429,12 @@ export const KNOWLEDGE = {
       "author": "邱韻芝 醫師",
       "date_published": "2025-11-11T02:12:52.730Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "快樂",
+        "沒感覺",
+        "麻木",
+        "提不起勁"
+      ]
     },
     {
       "id": "anxious-attachment-signals",
@@ -328,7 +446,10 @@ export const KNOWLEDGE = {
       "keywords": [
         "依附",
         "訊息",
-        "等待"
+        "等待",
+        "已讀",
+        "等回覆",
+        "不安"
       ]
     },
     {
@@ -338,7 +459,12 @@ export const KNOWLEDGE = {
       "author": "周呈叡 醫師",
       "date_published": "2025-11-03T02:36:17.213Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "老人",
+        "長輩",
+        "老年",
+        "憂鬱"
+      ]
     },
     {
       "id": "mental-fatigue-symptoms",
@@ -347,7 +473,12 @@ export const KNOWLEDGE = {
       "author": "放心說編輯部",
       "date_published": "2025-10-24T15:08:48.197Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "腦疲勞",
+        "疲勞",
+        "好累",
+        "用腦"
+      ]
     },
     {
       "id": "aspergers-in-women-and-girls",
@@ -356,7 +487,12 @@ export const KNOWLEDGE = {
       "author": "吳泓熹 醫師",
       "date_published": "2025-10-16T15:18:36.593Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "亞斯",
+        "自閉",
+        "特質",
+        "女生"
+      ]
     },
     {
       "id": "generalized-anxiety-disorder",
@@ -365,7 +501,12 @@ export const KNOWLEDGE = {
       "author": "蔡佩蓁 醫師",
       "date_published": "2025-10-15T09:10:46.953Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "焦慮",
+        "擔心",
+        "緊張",
+        "停不下來"
+      ]
     },
     {
       "id": "eldest-daughter-syndrome",
@@ -374,7 +515,12 @@ export const KNOWLEDGE = {
       "author": "洪敬倫 醫師",
       "date_published": "2025-10-14T17:53:14.227Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "長女",
+        "大姐",
+        "懂事",
+        "責任"
+      ]
     },
     {
       "id": "high-functioning-anxiety-self-relief-treatment",
@@ -383,7 +529,12 @@ export const KNOWLEDGE = {
       "author": "放心說編輯部",
       "date_published": "2025-10-12T11:01:42.763Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "焦慮",
+        "完美主義",
+        "停不下來",
+        "高功能"
+      ]
     },
     {
       "id": "insomnia-and-sleep-disorders-treatments",
@@ -395,7 +546,9 @@ export const KNOWLEDGE = {
       "keywords": [
         "睡眠",
         "失眠",
-        "睡不著"
+        "睡不著",
+        "睡不好",
+        "熬夜"
       ]
     },
     {
@@ -405,7 +558,12 @@ export const KNOWLEDGE = {
       "author": "洪敬倫 醫師",
       "date_published": "2025-09-08T14:06:57.977Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "躁鬱",
+        "雙相",
+        "情緒起伏",
+        "躁"
+      ]
     },
     {
       "id": "EAP-employee-assistance-program",
@@ -414,7 +572,12 @@ export const KNOWLEDGE = {
       "author": "放心說編輯部",
       "date_published": "2025-08-29T07:46:48.513Z",
       "source_page": 3,
-      "keywords": []
+      "keywords": [
+        "EAP",
+        "員工",
+        "公司",
+        "職場"
+      ]
     },
     {
       "id": "depression-symptoms-guide",
@@ -423,7 +586,12 @@ export const KNOWLEDGE = {
       "author": "邱韻芝 醫師",
       "date_published": "2025-08-29T07:36:50.907Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "憂鬱",
+        "症狀",
+        "低落",
+        "身體不適"
+      ]
     },
     {
       "id": "melatonin-sleep-guide",
@@ -432,7 +600,12 @@ export const KNOWLEDGE = {
       "author": "吳泓熹 醫師",
       "date_published": "2025-08-29T06:51:03.100Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "褪黑激素",
+        "助眠",
+        "失眠",
+        "睡眠"
+      ]
     },
     {
       "id": "depression-treatment-options",
@@ -441,7 +614,12 @@ export const KNOWLEDGE = {
       "author": "洪敬倫 醫師",
       "date_published": "2025-08-29T06:36:55.413Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "憂鬱",
+        "治療",
+        "藥物",
+        "心理治療"
+      ]
     },
     {
       "id": "major-depressive-disorder-symptoms-treatment",
@@ -450,7 +628,12 @@ export const KNOWLEDGE = {
       "author": "周呈叡 醫師",
       "date_published": "2025-08-15T06:08:35.733Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "躺床",
+        "不想出門",
+        "沒動力",
+        "憂鬱"
+      ]
     },
     {
       "id": "ocd-symptoms-causes",
@@ -459,7 +642,12 @@ export const KNOWLEDGE = {
       "author": "簡婉曦 醫師",
       "date_published": "2025-08-06T14:47:56.183Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "強迫",
+        "潔癖",
+        "反覆檢查",
+        "怕髒"
+      ]
     },
     {
       "id": "session-summary-introduction",
@@ -468,7 +656,10 @@ export const KNOWLEDGE = {
       "author": "放心說編輯部",
       "date_published": "2025-08-03T03:06:57.450Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "會談小結",
+        "諮商紀錄"
+      ]
     },
     {
       "id": "Adult-ADHD",
@@ -477,7 +668,14 @@ export const KNOWLEDGE = {
       "author": "吳泓熹 醫師",
       "date_published": "2025-07-24T03:11:46.277Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "ADHD",
+        "分心",
+        "拖延",
+        "注意力",
+        "衝動",
+        "過動"
+      ]
     },
     {
       "id": "ptsd-symptoms-and-treatment",
@@ -486,7 +684,12 @@ export const KNOWLEDGE = {
       "author": "邱韻芝 醫師",
       "date_published": "2025-07-04T02:41:31.287Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "PTSD",
+        "創傷",
+        "惡夢",
+        "閃回"
+      ]
     },
     {
       "id": "panic-disorder-symptoms-diagnosis",
@@ -495,7 +698,12 @@ export const KNOWLEDGE = {
       "author": "邱韻芝 醫師",
       "date_published": "2025-07-01T10:56:21.297Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "恐慌",
+        "心跳加速",
+        "喘不過氣",
+        "發作"
+      ]
     },
     {
       "id": "depression-severity-levels",
@@ -504,7 +712,12 @@ export const KNOWLEDGE = {
       "author": "放心說編輯部",
       "date_published": "2025-06-29T04:07:27.033Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "憂鬱",
+        "輕度",
+        "重度",
+        "分級"
+      ]
     },
     {
       "id": "family-mental-health-support-guide",
@@ -513,7 +726,12 @@ export const KNOWLEDGE = {
       "author": "余幸子 Hsing-tzu-Yu",
       "date_published": "2025-06-17T13:45:56.243Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "家人",
+        "精神疾病",
+        "身心科",
+        "家屬"
+      ]
     },
     {
       "id": "male-anxiety-patterns",
@@ -522,7 +740,13 @@ export const KNOWLEDGE = {
       "author": "余幸子",
       "date_published": "2025-05-25T08:53:28.147Z",
       "source_page": 4,
-      "keywords": []
+      "keywords": [
+        "男性",
+        "暴怒",
+        "生悶氣",
+        "情緒失控",
+        "焦慮"
+      ]
     },
     {
       "id": "messaging-anxiety-boundaries",
@@ -534,7 +758,10 @@ export const KNOWLEDGE = {
       "keywords": [
         "訊息",
         "回覆",
-        "界線"
+        "界線",
+        "回訊息",
+        "已讀不回",
+        "訊息焦慮"
       ]
     },
     {
@@ -544,7 +771,12 @@ export const KNOWLEDGE = {
       "author": "余幸子 Hsing-tzu-Yu",
       "date_published": "2025-03-27T05:47:18.613Z",
       "source_page": 5,
-      "keywords": []
+      "keywords": [
+        "留學",
+        "海外",
+        "文化衝擊",
+        "適應"
+      ]
     },
     {
       "id": "cross-cultural-adaptation",
@@ -553,7 +785,12 @@ export const KNOWLEDGE = {
       "author": "余幸子 Hsing-tzu-Yu",
       "date_published": "2025-03-19T15:04:09.233Z",
       "source_page": 5,
-      "keywords": []
+      "keywords": [
+        "跨文化",
+        "職場溝通",
+        "文化差異",
+        "外商"
+      ]
     },
     {
       "id": "workplace-burnout-signs",
@@ -566,7 +803,10 @@ export const KNOWLEDGE = {
         "工作",
         "職場",
         "過勞",
-        "倦怠"
+        "倦怠",
+        "加班",
+        "離職",
+        "老闆"
       ]
     },
     {
@@ -579,7 +819,9 @@ export const KNOWLEDGE = {
       "keywords": [
         "覺察",
         "情緒",
-        "內耗"
+        "內耗",
+        "自我覺察",
+        "迷惘"
       ]
     },
     {
@@ -593,7 +835,10 @@ export const KNOWLEDGE = {
         "預約",
         "流程",
         "費用",
-        "諮商"
+        "諮商",
+        "線上諮商",
+        "價格",
+        "第一次諮商"
       ]
     }
   ],
@@ -621,5 +866,5 @@ export const KNOWLEDGE = {
       "clinical_review_status": "pending"
     }
   ],
-  "content_hash": "898cfe0a540e4be4c78eb91e27707ccb389a900c69baf621ac2b45487301acb8"
+  "content_hash": "91bdf67ae65e8747569baa9df51338d9ad49f9bf0e0aa0e84c1a688cd8e6b5b1"
 };

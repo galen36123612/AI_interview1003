@@ -10,7 +10,48 @@ const topicWords = {
   mood: ["低落", "憂鬱", "焦慮", "情緒", "覺察"],
   overseas: ["海外", "留學", "文化衝擊"],
 };
+// Colloquial words map onto the catalog's vocabulary so a fuzzy request still ranks
+// (query-side only; article bodies stay unavailable).
+const synonyms = [
+  [/睡不好|睡不著|睡不着|熬夜|睡眠|失眠|睡太少|睡很差|一直醒/, "失眠 睡眠"],
+  [/難過|不開心|心情不好|心情很差|提不起勁|沒動力|想哭|低落|憂鬱|鬱悶|沒有意義|不快樂/, "憂鬱 低落"],
+  [/緊張|擔心|害怕|不安|恐慌|心悸|喘不過氣|焦慮|煩躁/, "焦慮 恐慌"],
+  [/壓力|壓力大|緊繃|喘不過來|撐不住/, "壓力 過勞 焦慮"],
+  [/爸媽|爸爸|媽媽|父母|家人|家裡|家庭|原生家庭/, "父母 原生家庭 家人"],
+  [/男友|女友|另一半|伴侶|分手|感情|曖昧|交往|夫妻|婚姻/, "伴侶 依附"],
+  [/已讀|不回|回訊息|等回覆|等他回|訊息/, "訊息 依附 界線"],
+  [/同學|朋友|排擠|欺負|霸凌|被孤立|被討厭/, "霸凌 排擠"],
+  [/不想上學|翹課|拒學|上學|學校|課業|考試|成績|升學/, "拒學 學校 課業"],
+  [/工作|老闆|主管|加班|同事|職場|離職|倦怠|過勞/, "職場 過勞"],
+  [/出國|留學|國外|海外|移民|文化/, "海外 留學"],
+  [/外貌|身材|長相|變胖|變醜|打扮/, "容貌 外貌"],
+  [/分心|拖延|專注|注意力|衝動|過動/, "ADHD 分心"],
+  [/記不住|腦袋空|反應變慢|腦霧|用腦過度/, "腦霧 疲勞"],
+  [/自殘|割腕|傷害自己/, "自殘 自我傷害"],
+  [/諮商|心理師|心理治療|看醫生|身心科|精神科|要不要去/, "諮商 心理師"],
+  [/心理學|衛教|心理健康|心理知識|自我照顧|情緒管理|覺察|內耗/, "覺察 情緒 諮商"],
+];
+const expandQuery = (text) => synonyms.reduce((acc, [pattern, words]) => pattern.test(text) ? `${acc} ${words}` : acc, text);
+/** Shown when an article request matches nothing: a short menu of what the index covers. */
+export const ARTICLE_MENU = [
+  ["睡眠與失眠", "失眠 睡眠"], ["憂鬱與心情低落", "憂鬱 低落"], ["焦慮與恐慌", "焦慮 恐慌"],
+  ["校園霸凌與不想上學", "霸凌 拒學"], ["工作過勞", "過勞 職場"], ["原生家庭與伴侶關係", "父母 原生家庭 伴侶"],
+  ["回訊息焦慮", "訊息 依附"], ["海外生活", "海外 留學"], ["心理諮商怎麼開始", "諮商 心理師"],
+];
+const menuChoice = (text) => {
+  const ordinal = text.match(/第\s*([一二三四五六七八九1-9])\s*(?:類|個|項|種)?/);
+  if (ordinal) {
+    const index = "一二三四五六七八九".indexOf(ordinal[1]);
+    const n = index >= 0 ? index : Number(ordinal[1]) - 1;
+    return ARTICLE_MENU[n] || null;
+  }
+  return ARTICLE_MENU.find(([label]) => text.includes(label))
+    || ARTICLE_MENU.find(([, words]) => words.split(" ").some((word) => text.includes(word)))
+    || ARTICLE_MENU.find(([, words]) => expandQuery(text).split(" ").some((word) => word && words.split(" ").includes(word) && word !== text.trim()))
+    || null;
+};
 const skipTokens = new Set([
+  "文獻", "參考", "資源", "研究", "觀念", "知識", "讀物", "書籍", "延伸", "主題", "類別", "哪一類", "那一類",
   "推薦", "文章", "相關", "閱讀", "資料", "看看", "可以", "有沒有", "什麼", "一篇", "兩篇", "幾篇", "提供", "幫忙", "一下", "請問", "想看", "希望", "原文", "給我", "幫我", "關於", "連結", "來源", "這個", "那個", "問題", "狀況", "情況", "忽略", "規則", "保證", "直接", "所有", "目前",
   "剛才", "剛剛", "那篇", "這篇", "上篇", "上一", "那一", "這一", "請把", "作者", "內容", "全文", "正文", "摘要", "總結", "整理", "重點", "建議", "具體", "方法", "技巧", "做法", "步驟", "說明", "介紹", "提到", "裡面", "文中", "怎麼", "怎樣", "怎麼辦", "怎麼做", "如何", "哪些", "有什麼", "常見", "一次", "知道", "告訴", "再來", "改成", "改為", "不要", "不用", "不想", "之前",
 ]);
@@ -30,7 +71,8 @@ function queryTokens(text) {
 }
 
 function rankArticles(text, limit) {
-  const searchText = normalized(text), tokens = queryTokens(text);
+  const expanded = expandQuery(text);
+  const searchText = normalized(expanded), tokens = queryTokens(expanded);
   // Common title words are not sufficient subject evidence. All 54 titles stay
   // searchable; curated keywords give stronger evidence but no content access.
   const subjectTokens = tokens.filter((token) => !backgroundWords.has(token)
@@ -46,7 +88,7 @@ function previousState(value) {
   const state = typeof value === "string" ? { topic: value } : value || {};
   const ids = (values) => Array.isArray(values) ? [...new Set(values.filter((id) => catalog.has(id)))].slice(0, 2) : [];
   return { topic: Object.hasOwn(topicWords, state.topic) ? state.topic : null,
-    articleIds: ids(state.articleIds), topicArticleIds: ids(state.topicArticleIds) };
+    articleIds: ids(state.articleIds), topicArticleIds: ids(state.topicArticleIds), awaitingMenuChoice: state.awaitingMenuChoice === true };
 }
 
 function referredArticles(input, state) {
@@ -64,7 +106,8 @@ function referredArticles(input, state) {
 export function routeKnowledge(text, previous = null) {
   const input = typeof text === "string" ? text.slice(0, 8000) : "";
   const state = previousState(previous);
-  const explicitTopic = Object.keys(topicWords).find((key) => topicWords[key].some((word) => input.includes(word))) || null;
+  const expandedInput = expandQuery(input);
+  const explicitTopic = Object.keys(topicWords).find((key) => topicWords[key].some((word) => expandedInput.includes(word))) || null;
   const topic = explicitTopic || state.topic;
   const currentTopicArticles = rankArticles(input, 1);
   let topicArticleIds = currentTopicArticles.length ? currentTopicArticles.map((a) => a.id)
@@ -96,9 +139,15 @@ export function routeKnowledge(text, previous = null) {
     articles = refersToSelection || queryTokens(input).length === 0 ? referredArticles(input, state) : rankArticles(input, 1);
     nextIds = articles.map((a) => a.id);
     script = "我目前只有文章的標題與原文連結，沒有讀取正文，不能替作者整理具體建議或引用原文。你可以開啟原文閱讀。";
-  } else if (!conversationalPriority && (articleIntent(input) || pointer.test(input))) {
+  } else if (!conversationalPriority && (articleIntent(input) || pointer.test(input)
+      || (state.awaitingMenuChoice && !guideId && menuChoice(input) && input.length <= 16))) {
     const limit = /兩篇|2篇|兩個|2個/.test(input) ? 2 : 1;
-    if (pointer.test(input)) {
+    const chosen = state.awaitingMenuChoice ? menuChoice(input) : null;
+    if (chosen && !pointer.test(input)) {
+      articles = rankArticles(chosen[1], limit);
+      route = "article_index";
+      topicArticleIds = articles.map((a) => a.id);
+    } else if (pointer.test(input)) {
       articles = referredArticles(input, state);
       if (articles.length !== 1) {
         route = "article_selection_needed";
@@ -115,14 +164,15 @@ export function routeKnowledge(text, previous = null) {
     nextIds = articles.map((a) => a.id);
     if (!script) script = articles.length
       ? `可以參考${articles.map((a) => `《${a.title}》`).join("、")}。我目前只有標題與原文連結，沒有讀取文章正文。`
-      : "目前本地索引沒有找到合適的文章。你可以再提供一個想了解的主題。";
+      : `目前本地索引沒有直接對應的文章。現有的主題是：${ARTICLE_MENU.map(([label]) => label).join("、")}。你想看哪一類？`;
   }
+  const awaitingMenuChoice = route === "article_no_match";
 
   const references = articles.map((a) => ({ id: a.id, title: a.title, url: a.url }));
   const addition = script
     ? `這輪是程式確認的資料能力邊界回覆，不是首次招呼。沒有文章摘要或正文可用；不能把一般常識說成文章內容。先考慮整段對話的安全；仍有危險訊號就遵循核心安全原則，不查文章。沒有安全疑慮時只逐字說下列固定文字，不新增解釋、建議、引文或網址。之前的助理回覆也不是文章正文或經核實的依據。原文連結由程式附上。\n固定文字：${JSON.stringify(script)}`
     : guideId ? KNOWLEDGE.guides.find((g) => g.id === guideId).guidance : "這輪只使用常駐原則，不載入文章或案例。";
-  return { topic, state: { topic, articleIds: nextIds, topicArticleIds }, route,
+  return { topic, state: { topic, articleIds: nextIds, topicArticleIds, awaitingMenuChoice }, route,
     guideId: script ? null : guideId, replyMode: script ? "bounded_script" : "conversation", scriptedText: script,
     sourceMode: articles.length ? "metadata_only" : "none", references,
     instructions: `${PSYCH_SUPPORT_INSTRUCTIONS}\n\n# 本輪載入的對話指引\n安全與核心規則始終優先。\n${addition}` };

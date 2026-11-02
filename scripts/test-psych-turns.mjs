@@ -203,7 +203,7 @@ test("ordinary replies wait for the pacing delay and carry an output budget; saf
   ctrl.submitText(item); ctrl.handle(ack(item));
   assert.equal(replies().length, 0); assert.equal(timers.length, 1); assert.equal(timers[0].ms, 1500);
   timers[0].fn();
-  assert.equal(replies().length, 1); assert.equal(replies()[0].response.max_output_tokens, 512);
+  assert.equal(replies().length, 1); assert.equal(replies()[0].response.max_output_tokens, 768);
   assert.equal(replies()[0].response.metadata.turn_id, "d1");
   ctrl.handle(created("r1", "d1")); ctrl.handle(done("r1"));
   // A newer message during the wait drops the waiting turn without a response.cancel.

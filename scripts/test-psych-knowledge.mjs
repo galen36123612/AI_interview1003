@@ -150,3 +150,37 @@ test("transport diagnostics correlate a rejected event without exposing its user
   assert.match(shown, /input_audio_buffer.clear/); assert.ok(!shown.includes("synthetic-private-marker"));
   assert.ok(!describeRealtimeError({code:"invalid_value",client_event_type:"synthetic-private-marker"}).includes("synthetic-private-marker"));
 });
+
+test("fuzzy article requests map colloquial words onto the catalog vocabulary", () => {
+  for (const [query, pattern] of [["最近都睡不好，有文章嗎", /失眠/], ["心情很差，推薦文章", /憂鬱/], ["一直等他回訊息好焦慮，有文章嗎", /回訊息/],
+    ["有沒有關於出國的文章", /海外/], ["推薦一篇關於拖延的文章", /ADHD/], ["有沒有講要不要去諮商的文章", /諮商/]]) {
+    const result = routeKnowledge(query);
+    assert.equal(result.route, "article_index", query); assert.match(result.references[0].title, pattern, query);
+  }
+  // Generic words such as 文獻/參考 no longer block the previous-topic fallback.
+  const first = routeKnowledge("可以跟我講一下心理學的衛教觀念嗎？");
+  const followup = routeKnowledge("有相關文獻或文章嗎？", first.state);
+  assert.equal(followup.route, "article_index"); assert.match(followup.references[0].title, /自我覺察/);
+});
+
+test("no article match offers the index menu, and a plain menu choice on the next turn selects an article", () => {
+  const menu = routeKnowledge("推薦一篇文章給我");
+  assert.equal(menu.route, "article_no_match"); assert.equal(menu.references.length, 0);
+  assert.match(menu.scriptedText, /現有的主題是：睡眠與失眠/); assert.equal(menu.state.awaitingMenuChoice, true);
+  const chosen = routeKnowledge("焦慮那個", menu.state);
+  assert.equal(chosen.route, "article_index"); assert.match(chosen.references[0].title, /焦慮/);
+  assert.equal(chosen.state.awaitingMenuChoice, false);
+  const ordinal = routeKnowledge("第四類", menu.state);
+  assert.equal(ordinal.route, "article_index"); assert.match(ordinal.references[0].title, /不想上學/);
+  // Without the pending menu, the same short reply is ordinary conversation.
+  assert.equal(routeKnowledge("焦慮那個").route, "core_only");
+  assert.equal(routeKnowledge("我今天好累", menu.state).route, "core_only");
+  // A long message is not treated as a menu pick even if it contains a category word.
+  assert.equal(routeKnowledge("其實我最近常常焦慮，跟爸媽講他們都覺得我想太多，我也不知道該怎麼辦才好", menu.state).route, "one_step");
+  // Menu state cannot inject IDs or text; only the boolean is kept.
+  assert.deepEqual(Object.keys(menu.state).sort(), ["articleIds", "awaitingMenuChoice", "topic", "topicArticleIds"]);
+});
+
+test("every catalog entry carries curated keywords", () => {
+  for (const article of KNOWLEDGE.articles) assert.ok(article.keywords.length >= 2, article.id);
+});
