@@ -6,11 +6,30 @@ import Image from "next/image";
 import Transcript from "@/app/components/Transcript";
 import { TranscriptItem } from "@/app/types";
 import { PSYCH_SUPPORT_GREETING } from "./policy.mjs";
-import { createTurnController, createTextMessage, describeRealtimeError } from "./turns.mjs";
+import { createTurnController, createTextMessage, describeRealtimeError, REPLY_DELAY_MS } from "./turns.mjs";
 
 type Message = { id: string; role: "user" | "assistant"; text: string; receivedAt: number };
 type Status = "idle" | "connecting" | "connected";
 const SESSION_LIMIT_MS = 10 * 60 * 1000;
+// An open safety concern must outlive the 10-minute reconnect and a page refresh in this tab.
+const CONCERN_KEY = "psych-safety-concern";
+type Concern = "check" | "self" | "others" | "medical" | "home" | null;
+const readStoredConcern = (): Concern => {
+  try {
+    const value = sessionStorage.getItem(CONCERN_KEY);
+    return value && ["check", "self", "others", "medical", "home"].includes(value) ? (value as Concern) : null;
+  } catch { return null; }
+};
+const storeConcern = (concern: Concern) => {
+  try { if (concern) sessionStorage.setItem(CONCERN_KEY, concern); else sessionStorage.removeItem(CONCERN_KEY); } catch { /* storage unavailable */ }
+};
+const SESSION_ENDED_BY_CONCERN: Record<string, string> = {
+  medical: "本次 10 分鐘測試已結束。你剛才提到已服用或受傷，請立即撥打 119，或請身邊的人代為撥打並陪著你；可重新開始對話。",
+  self: "本次 10 分鐘測試已結束。如果現在仍有傷害自己的念頭，請立即聯絡身邊可信任的人，或撥打 1925 安心專線；有立即危險請撥打 119 或 110。可重新開始對話。",
+  others: "本次 10 分鐘測試已結束。若仍可能傷害別人或自己，請立即撥打 110 或 119，並與對方保持距離。可重新開始對話。",
+  home: "本次 10 分鐘測試已結束。如果現在仍有人可能傷害你，請撥打 113 保護專線；有立即危險請撥打 110。可重新開始對話。",
+  check: "本次 10 分鐘測試已結束。如果你現在不安全或有傷害自己的念頭，請撥打 1925 安心專線；有立即危險請撥打 119 或 110。可重新開始對話。",
+};
 
 export default function PsychSupportClient() {
   const [status, setStatus] = useState<Status>("idle");
@@ -37,6 +56,8 @@ export default function PsychSupportClient() {
   const turnsRef = useRef<ReturnType<typeof createTurnController> | null>(null);
   const deadlineRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const concernRef = useRef<Concern>(null);
+  useEffect(() => { concernRef.current = readStoredConcern(); }, []);
 
   const stop = useCallback(() => {
     generationRef.current += 1;
@@ -113,9 +134,16 @@ export default function PsychSupportClient() {
         connectionTimeoutRef.current = null;
         setStatus("connected");
         deadlineRef.current = setTimeout(() => {
-          stop(); setError("本次 10 分鐘測試已結束，可重新開始。");
+          stop();
+          setError(SESSION_ENDED_BY_CONCERN[concernRef.current || ""] || "本次 10 分鐘測試已結束，可重新開始。");
         }, SESSION_LIMIT_MS);
         turnsRef.current = createTurnController({
+          initialConcern: concernRef.current,
+          onConcernChange: (concern: string | null) => {
+            const next = concern && ["check", "self", "others", "medical", "home"].includes(concern) ? (concern as Concern) : null;
+            concernRef.current = next; storeConcern(next);
+          },
+          replyDelayMs: REPLY_DELAY_MS,
           send: (event: Record<string, unknown>) => {
             if (generation === generationRef.current && channel.readyState === "open") channel.send(JSON.stringify(event));
           },
@@ -186,7 +214,10 @@ export default function PsychSupportClient() {
     updateDraft("");
   };
 
-  const clear = () => { stop(); setMessages([]); setRatings({}); updateDraft(""); setError(""); };
+  const clear = () => {
+    stop(); setMessages([]); setRatings({}); updateDraft(""); setError("");
+    concernRef.current = null; storeConcern(null);
+  };
   const connected = status === "connected";
 
   const togglePushToTalk = () => {

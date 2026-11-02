@@ -22,7 +22,28 @@ export function describeRealtimeError(error) {
   return `Realtime 事件錯誤：${code}${param ? `（${param}）` : ""}${origin ? `［${origin}］` : ""}。請重試或重新連線。`;
 }
 
-export function createTurnController({ send, setMicrophoneEnabled, onDiscard, onNotice, now = Date.now, onTrace = diagnosticSink() }) {
+/** Hard output budget for ordinary turns (audio + text tokens). Safety scripts set their own. */
+export const REPLY_MAX_OUTPUT_TOKENS = 512;
+/** Pause before an ordinary reply so it does not start the instant the user stops. Safety replies never wait. */
+export const REPLY_DELAY_MS = 1500;
+
+/**
+ * @param {{
+ *   send: (event: Record<string, unknown>) => void,
+ *   setMicrophoneEnabled: (enabled: boolean) => void,
+ *   onDiscard: (id: string) => void,
+ *   onNotice: (notice: string) => void,
+ *   now?: () => number,
+ *   onTrace?: ((record: Record<string, unknown>) => void) | null,
+ *   initialConcern?: string | null,
+ *   onConcernChange?: (concern: string | null) => void,
+ *   replyDelayMs?: number,
+ *   schedule?: (fn: () => void, ms: number) => unknown,
+ *   cancelScheduled?: (handle: unknown) => void,
+ * }} options
+ */
+export function createTurnController({ send, setMicrophoneEnabled, onDiscard, onNotice, now = Date.now, onTrace = diagnosticSink(),
+  initialConcern = null, onConcernChange = () => {}, replyDelayMs = 0, schedule = (fn, ms) => setTimeout(fn, ms), cancelScheduled = (handle) => clearTimeout(handle) }) {
   const trace = createDiagnosticEmitter(onTrace, now);
   let pending = null;
   let active = null;
@@ -34,7 +55,8 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
   let recording = false;
   let recordingStartedAt = 0;
   let disposed = false;
-  let safetyConcern = null;
+  // Carried in from the previous connection by the caller so a reconnect never clears an open concern.
+  let safetyConcern = initialConcern;
   let knowledgeState = { topic: null, articleIds: [] };
   const audioItems = new Set();
   const blocked = new Set();
@@ -46,7 +68,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
 
   const contextFor = (text) => {
     const result = selectSafetyResponse(text, safetyConcern);
-    safetyConcern = result.concern;
+    if (result.concern !== safetyConcern) { safetyConcern = result.concern; onConcernChange(safetyConcern); }
     if (result.mode) {
       knowledgeState = { topic: null, articleIds: [] };
       return { safety: result.mode, instructions: result.instructions };
@@ -87,6 +109,10 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     if (pending?.kind === "voice") pending = null;
   };
   const cancelActive = () => {
+    if (active?.delayTimer) {
+      // Nothing was requested yet; drop the waiting turn without a cancel event.
+      cancelScheduled(active.delayTimer); active = null;
+    }
     if (active) {
       active.cancelled = true;
       if (active.responseId && !active.cancelSent) {
@@ -107,11 +133,20 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
         article_ids: (turn.references || []).map((a) => a.id).join(",") || "none" } : {}),
       ...(turn.safety ? { safety_mode: turn.safety } : {}) };
     active.metadata = metadata;
-    emit({ type: "response.create", event_id: active.requestEventId, response: {
+    const request = () => emit({ type: "response.create", event_id: active.requestEventId, response: {
       metadata,
       ...(turn.instructions ? { instructions: turn.instructions } : {}),
-      ...(turn.safety ? { input: [], max_output_tokens: 1536 } : {}),
+      ...(turn.safety ? { input: [], max_output_tokens: 1536 } : { max_output_tokens: REPLY_MAX_OUTPUT_TOKENS }),
     } });
+    const delay = turn.safety || turn.kind === "greeting" ? 0 : replyDelayMs;
+    if (delay > 0) {
+      trace("reply_delayed", { turn_id: turn.id, delay_ms: delay });
+      const waiting = active;
+      waiting.delayTimer = schedule(() => {
+        if (disposed || active !== waiting || waiting.delayTimer === null) return;
+        waiting.delayTimer = null; request();
+      }, delay);
+    } else request();
   };
   const enqueue = (turn) => { pending = turn; cancelActive(); drain(); };
 
@@ -166,6 +201,8 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       // ASR completion validates the committed audio before requesting a reply.
     },
     allowsVoice() { return !disposed && !drafting && !textHold; },
+    /** Current safety concern, for the caller to carry across a reconnect. */
+    concern() { return safetyConcern; },
     handle(event) {
       if (disposed) return false;
       const type = event.type;
@@ -236,9 +273,12 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
         if (active && (event.response?.id === active.responseId || event.response?.metadata?.turn_id === active.id)) {
           if (!active.cancelled && event.response?.status === "completed" && active.nextKnowledgeState
             && (!active.scriptedText || active.sourceReplyAccepted)) knowledgeState = active.nextKnowledgeState;
+          const usage = event.response?.usage || {};
           trace("response_finished", { turn_id: active.id, response_id: event.response?.id || null,
             status: ["completed", "cancelled", "failed", "incomplete"].includes(event.response?.status) ? event.response.status : "unknown",
-            cancelled_by_client: active.cancelled });
+            cancelled_by_client: active.cancelled, output_tokens: Number.isInteger(usage.output_tokens) ? usage.output_tokens : null,
+            output_audio_tokens: Number.isInteger(usage.output_token_details?.audio_tokens) ? usage.output_token_details.audio_tokens : null,
+            output_text_tokens: Number.isInteger(usage.output_token_details?.text_tokens) ? usage.output_token_details.text_tokens : null });
           active = null; drain(); releaseTextHold();
         }
       }
@@ -254,7 +294,9 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
       return true;
     },
     dispose() {
-      disposed = true; pending = null; active = null; safetyConcern = null; knowledgeState = { topic: null, articleIds: [] };
+      disposed = true; pending = null;
+      if (active?.delayTimer) cancelScheduled(active.delayTimer);
+      active = null; safetyConcern = null; knowledgeState = { topic: null, articleIds: [] };
       audioItems.clear(); blocked.clear(); handled.clear(); deleted.clear(); cancelledResponses.clear();
       sentEventTypes.clear();
     },

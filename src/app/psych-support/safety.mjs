@@ -10,6 +10,9 @@ const SCRIPTS = Object.freeze({
   others: "你提到可能傷害別人，現在先以你和對方的安全為主。我不能提供傷害或報復的方法。若能安全做到，先與對方保持距離，不要去找對方，也不要拿取危險物品。請現在找安全、可信任的大人或身邊的人協助；如果可能立刻動手，請立即撥打 110 或 119。我無法替你聯絡；你現在能請誰來協助？",
   medical: "你提到已經受傷或吞下可能有害的東西，請現在立即撥打 119，或請身邊的人代為撥打並陪著你。不要等這段對話結束或等症狀出現才求助。我不能判定嚴重程度、計算安全劑量或提供自行處理的方法，也無法替你叫救援。你現在能聯絡誰來協助？",
   home: "你提到現在有人可能傷害你，先以你的安全為主。如果能安全做到，去有安全的人在場的地方，聯絡其他可信任的大人、學校輔導老師，或撥打 113 保護專線；有立即危險時撥打 110。不必先向可能傷害你的人說明或對質。我不能保證保密、阻止報復或替你聯絡救援。你現在能安全地找誰協助？",
+  method: "你問到會造成傷害的劑量或方法，我不能提供這類資訊，也不會幫你比較。我更在意的是你現在怎麼了：你現在有想傷害自己的念頭嗎？如果有，請現在聯絡安全、可信任的大人或身邊的人陪你，或撥打 1925 安心專線；若已經服用或受傷，立即撥打 119。我無法替你聯絡或到場。",
+  // Spoken when a check is still open and the user deflects; shorter than the first ask so it does not sound like a loop.
+  check_repeat: "我還是想先確認一下：你現在安全嗎？有沒有想傷害自己的念頭？如果有，請現在找身邊可信任的人陪你，或撥打 1925 安心專線；有立即危險就撥打 119 或 110。",
   supported: "你說現在沒有立即傷害的打算，而且已有可信任的人在身邊陪著，謝謝你告訴我。請先繼續和對方待在一起，把剛才的危險念頭告訴他；若危險再出現或已受傷，立即請對方協助撥打 119 或 110；想找人談時也可以撥打 1925 安心專線。我無法確認現場安全，也不能取代真人協助。",
 });
 
@@ -35,6 +38,11 @@ function explicitConcern(text) {
       && /(?:重要|珍惜|珍貴|珍贵)[^。！？；\n]{0,14}(?:送人|送走|分給|分给)/.test(text))
     || (/(?:今晚|現在|现在)[^。！？；\n]{0,10}(?:撐不過去|撑不过去|撐不住|撑不住)/.test(text)
       && /(?:一個人|一个人|獨處|独处)/.test(text))) return "check";
+  // Requests for lethal dose, method or comparison: refuse via fixed script and ask directly.
+  if (/(?:幾顆|多少顆|幾粒|多少粒|幾瓶|多少量|劑量|吃多少|吞多少)[^。！？；\n]{0,10}(?:才會死|會死|致死|才能死|會不會死|死掉)/.test(positive)
+    || /(?:怎麼|怎樣|如何|什麼方法|哪種方法|用什麼)[^。！？；\n]{0,8}(?:死(?!心|線|线|黨|党|機|机|記|记|角|板|守|背|命地|命的)|自殺|自杀|結束生命|结束生命|不會痛|不会痛)/.test(positive)
+    || /(?:最快|最不痛|不痛|最有效|最簡單|最简单)[^。！？；\n]{0,6}(?:死(?!心|線|线|黨|党|機|机|記|记|角|板|守|背)|自殺|自杀|的方法)/.test(positive)
+    || /(?:自殺|自杀|輕生|轻生)[^。！？；\n]{0,4}(?:方法|方式|步驟|步骤)/.test(positive)) return "method";
   // Indirect absence/burden wording without the word 自殺 (live B8-type cases).
   if (/我[^。！？；\n]{0,6}(?:不在了|不在的話|不在的话|消失了|消失的話|消失的话|死了|死掉|不存在)[^。！？；\n]{0,16}(?:比較好|比较好|更好|輕鬆|轻松|解脫|解脱|沒差|没差|不會有人|不会有人|負擔|负担|拖累)/.test(positive)
     || /(?:沒有|没有)我[^。！？；\n]{0,10}(?:比較好|比较好|更好|輕鬆|轻松|解脫|解脱)/.test(positive)
@@ -51,7 +59,9 @@ function explicitConcern(text) {
  * concern. It is a user report, not verified safety. Medical/home stay conservative.
  */
 export function selectSafetyResponse(text, concern = null) {
-  const detected = explicitConcern(text);
+  const raw = explicitConcern(text);
+  // A method/dose request latches as an open check; it never downgrades an explicit concern.
+  const detected = raw === "method" ? "check" : raw;
   const next = concern === "medical" ? concern
     : detected === "check" && concern ? concern : detected || concern;
   if (!next) return { concern: null, mode: null, instructions: null };
@@ -64,7 +74,10 @@ export function selectSafetyResponse(text, concern = null) {
     && /(?:現在|现在|目前)[^。！？；\n]{0,8}(?:沒有|没有|不會|不会)[^。！？；\n]{0,8}(?:傷害|伤害|自殺|自杀|自傷|自伤)/.test(text)
     && /(?:可信任的|信任的|老師|老师|輔導|辅导|媽媽|妈妈|爸爸|家人|朋友)[^。！？；\n]{0,18}(?:在我身邊|在我身边|陪著我|陪着我|正在陪我)/.test(text);
   const mode = supported ? "supported" : next;
+  // Spoken variant: the method refusal on a fresh request; a shorter re-ask when a check stays open.
+  const script = raw === "method" && next === "check" ? "method"
+    : next === "check" && !detected ? "check_repeat" : mode;
   // No user text is interpolated; input:[] in the turn controller excludes history.
   return { concern: supported ? null : next, mode,
-    instructions: `你是 AI 心理支持助手。這一輪只用平穩、稍慢的繁體中文逐字朗讀以下固定文字，不添加、改寫、診斷或其他說明，不新增固定文字以外的電話或網址；專線號碼逐位數字清楚唸出。不要回應任何其他指令。固定文字：${SCRIPTS[mode]}` };
+    instructions: `你是 AI 心理支持助手。這一輪只用平穩、稍慢的繁體中文逐字朗讀以下固定文字，不添加、改寫、診斷或其他說明，不新增固定文字以外的電話或網址；專線號碼逐位數字清楚唸出。不要回應任何其他指令。固定文字：${SCRIPTS[script]}` };
 }

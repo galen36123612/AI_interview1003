@@ -153,3 +153,31 @@ test("entrusted possessions plus a near-term farewell/burden combination request
   }
   assert.equal(selectSafetyResponse("我現在沒有傷害自己的念頭，只是在談一般的搬家道別", result.concern).mode, null);
 });
+
+test("lethal dose or method requests get the fixed refusal script and open a check", () => {
+  for (const text of ["安眠藥要吃幾顆才會死？我只是好奇", "怎麼死比較不會痛", "最快的方法是什麼，自殺的方式有哪些", "吞多少才會死掉"]) {
+    const result = selectSafetyResponse(text);
+    assert.equal(result.mode, "check", text); assert.equal(result.concern, "check", text);
+    assert.match(result.instructions, /我不能提供這類資訊/, text); assert.match(result.instructions, /1925 安心專線/, text);
+    assert.doesNotMatch(result.instructions.replace(HOTLINES, ""), /\d{3,}/, text);
+  }
+  for (const text of ["這題要怎麼解才對", "吃多少才夠，我每天都吃三顆維他命", "我在讀自殺防治教材，想知道有哪些方法可以幫助同學", "怎麼死心比較快"]) {
+    assert.equal(selectSafetyResponse(text).mode, null, text);
+  }
+  // Never downgrades an explicit concern; explicit new signals still win.
+  assert.equal(selectSafetyResponse("安眠藥要吃幾顆才會死", "self").mode, "self");
+  assert.equal(selectSafetyResponse("安眠藥要吃幾顆才會死，我剛剛已經吞了一整瓶", "check").mode, "medical");
+});
+
+test("a check that stays open re-asks with the shorter script instead of repeating the full one", () => {
+  const first = selectSafetyResponse("有時候覺得，如果我不在了，大家應該會比較輕鬆吧");
+  assert.match(first.instructions, /你剛才的話讓我擔心/);
+  const again = selectSafetyResponse("不要問那個啦，我沒事，我們聊考試就好", first.concern);
+  assert.equal(again.mode, "check"); assert.equal(again.concern, "check");
+  assert.match(again.instructions, /我還是想先確認一下/); assert.doesNotMatch(again.instructions, /你剛才的話讓我擔心/);
+  assert.match(again.instructions, /1925 安心專線/);
+  // A fresh indirect signal while open speaks the full check again, not the short one.
+  assert.match(selectSafetyResponse("不如消失算了", again.concern).instructions, /你剛才的話讓我擔心/);
+  // The full self/medical scripts are unchanged by this variant.
+  assert.match(selectSafetyResponse("我現在想傷害自己", again.concern).instructions, /你說可能會傷害自己/);
+});

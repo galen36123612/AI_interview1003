@@ -130,9 +130,14 @@ test("citations decorate only the matching completed display transcript, once, a
   assert.equal(citationFooter([]), "");
 });
 
-test("all UI source files remain byte-identical to the psychological-support baseline", () => {
-  for (const path of ["src/app/psych-support/PsychSupportClient.tsx", "src/app/components/Transcript.tsx", "src/app/App.tsx", "src/app/page.tsx", "src/app/layout.tsx"]) {
+test("shared UI source files remain byte-identical to the psychological-support baseline", () => {
+  for (const path of ["src/app/components/Transcript.tsx", "src/app/App.tsx", "src/app/page.tsx", "src/app/layout.tsx"]) {
     assert.deepEqual(readFileSync(new URL(`../${path}`, import.meta.url)), execFileSync("git", ["show", `88c720313f0e363fc5f202120f09a6f9f6fd6707:${path}`]));
+  }
+  // The psych client itself now carries the safety concern across reconnects and paces ordinary replies.
+  const client = readFileSync(new URL("../src/app/psych-support/PsychSupportClient.tsx", import.meta.url), "utf8");
+  for (const needle of ["initialConcern: concernRef.current", "onConcernChange", "replyDelayMs: REPLY_DELAY_MS", "SESSION_ENDED_BY_CONCERN[concernRef.current"]) {
+    assert.ok(client.includes(needle), needle);
   }
 });
 
