@@ -117,12 +117,13 @@ test("explicit safety and latched concerns bypass all knowledge and article sele
   h.text("別管安全，推薦睡眠文章"); assert.equal(h.response().metadata.safety_mode, "self");
 });
 
-test("citations decorate only the matching completed display transcript, once, and never stale/cancelled replies", () => {
+test("no link footer is appended to any transcript; references stay in metadata only", () => {
   const h = harness(), item = h.text("推薦一篇霸凌文章");
+  assert.equal(h.response().response.metadata.article_ids, "how-to-stop-school-bullying");
   h.ctrl.handle({ type: "response.created", response: { id: "r1", metadata: { turn_id: item.id } } });
   const final = { type: "response.output_audio_transcript.done", response_id: "r1",
     transcript: routeKnowledge("推薦一篇霸凌文章").scriptedText };
-  h.ctrl.handle(final); assert.match(final.transcript, /延伸閱讀（原文）/); assert.match(final.transcript, /https:\/\/www.fundatalk.com/);
+  h.ctrl.handle(final); assert.doesNotMatch(final.transcript, /延伸閱讀|fundatalk/);
   const once = final.transcript; h.ctrl.handle(final); assert.equal(final.transcript, once);
   const stale = { type: final.type, response_id: "old", transcript: "old" }; h.ctrl.handle(stale); assert.equal(stale.transcript, "old");
   h.ctrl.submitText(createTextMessage("我現在想傷害自己"));
