@@ -201,7 +201,9 @@ export function routeKnowledge(text, previous = null) {
   } else if (!conversationalPriority && (articleIntent(input) || pointer.test(input)
       // A short category pick counts as an article request after the menu, or right after an
       // article reply (「焦慮那個」 = a different article); otherwise the model would have to guess a title.
-      || ((state.awaitingMenuChoice || state.articleIds.length > 0) && !guideId && menuChoice(input) && input.length <= 16))) {
+      || ((state.awaitingMenuChoice || state.articleIds.length > 0) && !guideId && menuChoice(input) && input.length <= 16
+        // A question (恐慌發作怎麼緩解？) is not a category pick even when it names a category word.
+        && !infoAsk.test(input) && !/[？?嗎]|怎麼|如何|為什麼/.test(input)))) {
     const limit = /兩篇|2篇|兩個|2個/.test(input) ? 2 : 1;
     const chosen = (state.awaitingMenuChoice || state.articleIds.length > 0) && !pointer.test(input) && !articleIntent(input)
       ? menuChoice(input) : null;

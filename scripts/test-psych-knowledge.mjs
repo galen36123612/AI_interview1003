@@ -190,6 +190,10 @@ test("no article match offers the index menu, and a plain menu choice on the nex
   const other = routeKnowledge("焦慮那個", after.state);
   assert.equal(other.route, "article_index"); assert.match(other.references[0].title, /焦慮/);
   assert.equal(routeKnowledge("那篇在講什麼？幫我摘要一下", other.state).route, "article_content");
+  // Live regression: a question that names a category word after an article reply is an informational ask, not a pick.
+  const asked = routeKnowledge("恐慌發作的時候可以怎麼緩解？", other.state);
+  assert.equal(asked.route, "kb_grounded"); assert.match(asked.references[0].title, /恐慌/);
+  assert.equal(routeKnowledge("睡眠那個呢？", other.state).route, "core_only");
   assert.equal(routeKnowledge("我今天好累", after.state).route, "core_only");
   assert.equal(routeKnowledge("我今天好累", menu.state).route, "core_only");
   // A long message is not treated as a menu pick even if it contains a category word.
