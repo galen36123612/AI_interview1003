@@ -58,8 +58,8 @@ const skipTokens = new Set([
 const normalized = (text) => text.normalize("NFKC").toLowerCase();
 const catalog = new Map(KNOWLEDGE.articles.map((a) => [a.id, a]));
 const backgroundWords = new Set(["學校", "學生", "國中", "高中"]);
-const articleIntent = (text) => !/(?:不要|不用|不想|別)(?:再|給我|推薦|看|讀|找|提供){0,3}(?:文章|閱讀|讀物)/.test(text)
-  && /文章|延伸閱讀|推薦讀物|原文連結/.test(text);
+const articleIntent = (text) => !/(?:不要|不用|不想|別)(?:再|給我|推薦|看|讀|找|提供){0,3}(?:文章|閱讀|讀物|文獻|參考資料)/.test(text)
+  && /文章|延伸閱讀|推薦讀物|原文連結|文獻|參考資料|相關資料|讀物/.test(text);
 const pointer = /剛(?:才|剛)(?:推薦的)?(?:那|這)?一?篇|(?:上|這|那)一?篇|第[一二12]篇|[這那上]個連結/;
 const contentAsk = /摘要|總結|重點|具體建議|全文|正文|完整內容|文章內容|引述|引用|逐字|摘錄|結論|主張|觀點|介紹|解釋|分析|(?:說|寫|講).{0,4}什麼|原文.{0,6}(?:說|寫)|作者.{0,12}(?:說|寫|建議)|(?:文章|[這那上]篇).{0,12}(?:建議|方法)/;
 
@@ -144,7 +144,9 @@ export function routeKnowledge(text, previous = null) {
     const limit = /兩篇|2篇|兩個|2個/.test(input) ? 2 : 1;
     const chosen = state.awaitingMenuChoice ? menuChoice(input) : null;
     if (chosen && !pointer.test(input)) {
-      articles = rankArticles(chosen[1], limit);
+      // The user's own word wins (e.g. 霸凌 inside the 霸凌與拒學 category); the category words are the fallback.
+      articles = rankArticles(input, limit);
+      if (!articles.length) articles = rankArticles(chosen[1], limit);
       route = "article_index";
       topicArticleIds = articles.map((a) => a.id);
     } else if (pointer.test(input)) {

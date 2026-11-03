@@ -161,6 +161,10 @@ test("fuzzy article requests map colloquial words onto the catalog vocabulary", 
   const first = routeKnowledge("可以跟我講一下心理學的衛教觀念嗎？");
   const followup = routeKnowledge("有相關文獻或文章嗎？", first.state);
   assert.equal(followup.route, "article_index"); assert.match(followup.references[0].title, /自我覺察/);
+  // 文獻 / 參考資料 alone count as an article request; the negated form still does not.
+  assert.equal(routeKnowledge("有相關文獻嗎？", first.state).route, "article_index");
+  assert.equal(routeKnowledge("有沒有參考資料", first.state).route, "article_index");
+  assert.equal(routeKnowledge("不用給我文獻，只想聊聊").references.length, 0);
 });
 
 test("no article match offers the index menu, and a plain menu choice on the next turn selects an article", () => {
@@ -172,6 +176,9 @@ test("no article match offers the index menu, and a plain menu choice on the nex
   assert.equal(chosen.state.awaitingMenuChoice, false);
   const ordinal = routeKnowledge("第四類", menu.state);
   assert.equal(ordinal.route, "article_index"); assert.match(ordinal.references[0].title, /不想上學/);
+  // A specific word inside a category picks the matching article, not the category's first one.
+  assert.match(routeKnowledge("霸凌", menu.state).references[0].title, /霸凌/);
+  assert.match(routeKnowledge("睡眠與失眠", menu.state).references[0].title, /失眠/);
   // Without the pending menu, the same short reply is ordinary conversation.
   assert.equal(routeKnowledge("焦慮那個").route, "core_only");
   assert.equal(routeKnowledge("我今天好累", menu.state).route, "core_only");
