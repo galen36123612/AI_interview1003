@@ -24,6 +24,8 @@ export function describeRealtimeError(error) {
 
 /** Hard output budget for ordinary turns (audio + text tokens). Safety scripts set their own. */
 export const REPLY_MAX_OUTPUT_TOKENS = 768;
+/** Grounded article replies say a little more (60–120 characters of speech). */
+export const GROUNDED_MAX_OUTPUT_TOKENS = 1280;
 /** Pause before an ordinary reply so it does not start the instant the user stops. Safety replies never wait. */
 export const REPLY_DELAY_MS = 1500;
 
@@ -76,7 +78,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     const knowledge = routeKnowledge(text, knowledgeState);
     return { knowledgeRoute: knowledge.route, instructions: knowledge.instructions,
       guideId: knowledge.guideId, replyMode: knowledge.replyMode, sourceMode: knowledge.sourceMode,
-      references: knowledge.references, nextKnowledgeState: knowledge.state, scriptedText: knowledge.scriptedText };
+      references: knowledge.references, passageIds: knowledge.passageIds, nextKnowledgeState: knowledge.state, scriptedText: knowledge.scriptedText };
   };
 
   const emit = (event) => {
@@ -130,13 +132,15 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     const metadata = { turn_id: turn.id, input_kind: turn.kind, knowledge_version: KNOWLEDGE.version,
       ...(turn.knowledgeRoute ? { knowledge_route: turn.knowledgeRoute, context_mode: turn.replyMode,
         source_mode: turn.sourceMode, guide_id: turn.guideId || "none",
-        article_ids: (turn.references || []).map((a) => a.id).join(",") || "none" } : {}),
+        article_ids: (turn.references || []).map((a) => a.id).join(",") || "none",
+        passage_ids: (turn.passageIds || []).join(",") || "none" } : {}),
       ...(turn.safety ? { safety_mode: turn.safety } : {}) };
     active.metadata = metadata;
     const request = () => emit({ type: "response.create", event_id: active.requestEventId, response: {
       metadata,
       ...(turn.instructions ? { instructions: turn.instructions } : {}),
-      ...(turn.safety ? { input: [], max_output_tokens: 1536 } : { max_output_tokens: REPLY_MAX_OUTPUT_TOKENS }),
+      ...(turn.safety ? { input: [], max_output_tokens: 1536 }
+        : { max_output_tokens: turn.replyMode === "grounded" ? GROUNDED_MAX_OUTPUT_TOKENS : REPLY_MAX_OUTPUT_TOKENS }),
     } });
     const delay = turn.safety || turn.kind === "greeting" ? 0 : replyDelayMs;
     if (delay > 0) {

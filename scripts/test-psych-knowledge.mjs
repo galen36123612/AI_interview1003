@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { routeKnowledge, citationFooter } from "../src/app/psych-support/knowledge.mjs";
 import { KNOWLEDGE } from "../src/app/psych-support/knowledge.generated.mjs";
+import { PASSAGES } from "../src/app/psych-support/passages.generated.mjs";
 import { PSYCH_SUPPORT_INSTRUCTIONS } from "../src/app/psych-support/instructions.mjs";
 import { buildKnowledge, eligibleCase, reviewedExportDigest } from "./build-psych-knowledge.mjs";
 import { createTurnController, createTextMessage, describeRealtimeError } from "../src/app/psych-support/turns.mjs";
@@ -41,7 +42,7 @@ test("article search returns relevant verified original links without article su
   const result = routeKnowledge("推薦一篇放心說關於校園霸凌的文章");
   assert.equal(result.route, "article_index"); assert.equal(result.references[0].url, "https://www.fundatalk.com/zh-Hant/article/how-to-stop-school-bullying");
   assert.equal(result.references.length, 1);
-  assert.ok(result.instructions.includes("沒有文章摘要或正文"));
+  assert.ok(result.instructions.includes("本輪沒有載入文章段落")); assert.match(result.scriptedText, /想聽我簡單說這篇在講什麼嗎/);
   const unknown = routeKnowledge("推薦關於量子糾纏的文章");
   assert.equal(unknown.route, "article_no_match"); assert.equal(unknown.references.length, 0);
 });
@@ -188,13 +189,54 @@ test("no article match offers the index menu, and a plain menu choice on the nex
   assert.equal(after.route, "article_index"); assert.match(after.references[0].title, /原生家庭/);
   const other = routeKnowledge("焦慮那個", after.state);
   assert.equal(other.route, "article_index"); assert.match(other.references[0].title, /焦慮/);
-  assert.equal(routeKnowledge("那篇在講什麼？幫我摘要一下", other.state).route, "article_content_unavailable");
+  assert.equal(routeKnowledge("那篇在講什麼？幫我摘要一下", other.state).route, "article_content");
   assert.equal(routeKnowledge("我今天好累", after.state).route, "core_only");
   assert.equal(routeKnowledge("我今天好累", menu.state).route, "core_only");
   // A long message is not treated as a menu pick even if it contains a category word.
   assert.equal(routeKnowledge("其實我最近常常焦慮，跟爸媽講他們都覺得我想太多，我也不知道該怎麼辦才好", menu.state).route, "one_step");
   // Menu state cannot inject IDs or text; only the boolean is kept.
-  assert.deepEqual(Object.keys(menu.state).sort(), ["articleIds", "awaitingMenuChoice", "topic", "topicArticleIds"]);
+  assert.deepEqual(Object.keys(menu.state).sort(), ["articleIds", "awaitingMenuChoice", "offeredSummary", "topic", "topicArticleIds"]);
+});
+
+test("demo passages cover every article, stay chunk-sized and carry no foreign fields", () => {
+  const ids = new Set(PASSAGES.map((p) => p.a));
+  assert.equal(ids.size, 54); assert.ok(PASSAGES.length > 400);
+  for (const p of PASSAGES) {
+    assert.deepEqual(Object.keys(p).sort(), ["a", "h", "id", "t"]);
+    assert.ok(KNOWLEDGE.articles.some((a) => a.id === p.a), p.id); assert.ok(p.id.startsWith(`${p.a}#`));
+    assert.ok(p.t.length >= 80 && p.t.length <= 520, `${p.id} ${p.t.length}`);
+    assert.doesNotMatch(p.t, /留下 email|登入註冊/);
+  }
+});
+
+test("an offered summary is accepted with a short yes and answered from that article only", () => {
+  const offer = routeKnowledge("最近都睡不好，有文章嗎");
+  assert.equal(offer.route, "article_index"); assert.equal(offer.state.offeredSummary, true);
+  const yes = routeKnowledge("好", offer.state);
+  assert.equal(yes.route, "article_content"); assert.deepEqual(yes.references.map((a) => a.id), offer.references.map((a) => a.id));
+  assert.ok(yes.passageIds.every((id) => id.startsWith(`${offer.references[0].id}#`)));
+  assert.equal(yes.state.offeredSummary, false);
+  // A refusal or an unrelated message is ordinary conversation again.
+  assert.equal(routeKnowledge("不用了", offer.state).route, "core_only");
+  assert.equal(routeKnowledge("我今天好累", offer.state).route, "core_only");
+  assert.equal(routeKnowledge("好", routeKnowledge("我今天好累").state).route, "core_only");
+});
+
+test("informational questions ground in matching passages; sharing, diagnosis asks and unknown topics do not", () => {
+  for (const [query, pattern] of [["恐慌發作的時候可以怎麼緩解？", /恐慌/], ["什麼是rTMS？", /rTMS/], ["褪黑激素有副作用嗎", /褪黑激素/],
+    ["社恐是什麼", /社交恐懼/], ["過勞的症狀有哪些", /過勞/], ["請問EAP是什麼", /EAP/], ["小孩不想上學怎麼辦", /不想上學/]]) {
+    const result = routeKnowledge(query);
+    assert.equal(result.route, "kb_grounded", query); assert.equal(result.replyMode, "grounded");
+    assert.match(result.references[0].title, pattern, query); assert.ok(result.passageIds.length >= 1 && result.passageIds.length <= 2);
+    assert.ok(result.instructions.startsWith(PSYCH_SUPPORT_INSTRUCTIONS)); assert.match(result.instructions, /本輪檢索到的文章段落/);
+    assert.ok(result.instructions.length < PSYCH_SUPPORT_INSTRUCTIONS.length + 1800, `${query} ${result.instructions.length}`);
+  }
+  for (const query of ["我今天好累", "我最近都睡不著", "我媽一直罵我，為什麼會這樣", "為什麼我會一直想哭", "量子糾纏是什麼", "這樣正常嗎",
+    "幫我診斷是不是憂鬱症", "我爸媽一直吵架我該怎麼辦", "過年要回誰家好煩"]) {
+    const result = routeKnowledge(query);
+    assert.notEqual(result.route, "kb_grounded", query); assert.deepEqual(result.passageIds, [], query);
+  }
+  assert.equal(routeKnowledge("幫我診斷是不是憂鬱症").route, "medical_boundary");
 });
 
 test("every catalog entry carries curated keywords", () => {

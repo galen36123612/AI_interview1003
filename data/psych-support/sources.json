@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-22-C4",
+  "version": "2026-11-03-C5-kb-demo",
   "sources": [
     {
       "id": "esconv",
@@ -29,11 +29,12 @@
       "catalog_date": "2026-10-21",
       "catalog_count": 54,
       "catalog_pages": 5,
-      "use": "metadata_and_original_links_only",
-      "article_content_enabled": false,
+      "use": "demo_passages_with_original_links",
+      "article_content_enabled": true,
       "license_review_status": "pending",
-      "clinical_review_status": "pending"
+      "clinical_review_status": "pending",
+      "content_scope": "demo_only_pending_license"
     }
   ],
-  "notice": "No source dialogue, article bodies or unreviewed summaries may be published or injected into model context. Retrieval eligibility is independent from topical relevance."
+  "notice": "Demo scope: public fundatalk article bodies are chunked into passages and injected only as per-turn reference text; license and clinical review remain pending. No source dialogue or unreviewed summaries may be published."
 }
