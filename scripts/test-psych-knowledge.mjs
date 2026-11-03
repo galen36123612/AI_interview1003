@@ -136,7 +136,8 @@ test("shared UI source files remain byte-identical to the psychological-support 
   }
   // The psych client itself now carries the safety concern across reconnects and paces ordinary replies.
   const client = readFileSync(new URL("../src/app/psych-support/PsychSupportClient.tsx", import.meta.url), "utf8");
-  for (const needle of ["initialConcern: concernRef.current", "onConcernChange", "replyDelayMs: REPLY_DELAY_MS", "SESSION_ENDED_BY_CONCERN[concernRef.current"]) {
+  for (const needle of ["initialConcern: concernRef.current", "onConcernChange", "replyDelayMs: REPLY_DELAY_MS", "SESSION_ENDED_BY_CONCERN[concernRef.current",
+    'event.type === "error" && (event.error?.client_event_type']) {
     assert.ok(client.includes(needle), needle);
   }
 });

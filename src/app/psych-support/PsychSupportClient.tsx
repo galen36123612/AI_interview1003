@@ -179,7 +179,12 @@ export default function PsychSupportClient() {
         if (event.type === "input_audio_buffer.speech_started" && turnsRef.current.allowsVoice()) setListening(true);
         if (["input_audio_buffer.speech_stopped", "input_audio_buffer.committed"].includes(event.type)) setListening(false);
         if (event.type === "response.done" && event.response?.status === "failed") setError("這次回應未完成，請重試或重新連線。");
-        if (event.type === "error") setError(describeRealtimeError(event.error));
+        // Only surface errors that answer one of our events or that end the session. An
+        // uncorrelated provider error with the reply still completing stays in the trace only.
+        if (event.type === "error" && (event.error?.client_event_type
+          || /session|auth|api_key|rate_limit|server_error|expired|quota/i.test(String(event.error?.code || "")))) {
+          setError(describeRealtimeError(event.error));
+        }
       };
       const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
       const result = await fetch("/api/session", {
