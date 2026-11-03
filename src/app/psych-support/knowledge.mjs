@@ -255,6 +255,8 @@ export function routeKnowledge(text, previous = null) {
   return { topic, state: { topic, articleIds: nextIds, topicArticleIds, awaitingMenuChoice, offeredSummary }, route,
     guideId: script ? null : guideId, replyMode: script ? "bounded_script" : passages.length ? "grounded" : "conversation", scriptedText: script,
     sourceMode: passages.length ? "passages" : articles.length ? "metadata_only" : "none", references,
+    // Links are shown only when the user asked for an article; a passage-grounded answer stays link-free in the transcript.
+    citations: passages.length ? [] : references,
     passageIds: passages.map((hit) => hit.passage.id),
     instructions: `${PSYCH_SUPPORT_INSTRUCTIONS}\n\n# 本輪載入的對話指引\n安全與核心規則始終優先。\n${addition}` };
 }

@@ -78,7 +78,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     const knowledge = routeKnowledge(text, knowledgeState);
     return { knowledgeRoute: knowledge.route, instructions: knowledge.instructions,
       guideId: knowledge.guideId, replyMode: knowledge.replyMode, sourceMode: knowledge.sourceMode,
-      references: knowledge.references, passageIds: knowledge.passageIds, nextKnowledgeState: knowledge.state, scriptedText: knowledge.scriptedText };
+      references: knowledge.references, citations: knowledge.citations, passageIds: knowledge.passageIds, nextKnowledgeState: knowledge.state, scriptedText: knowledge.scriptedText };
   };
 
   const emit = (event) => {
@@ -226,7 +226,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
         && active && !active.cancelled && event.response_id === active.responseId) {
         const field = typeof event.transcript === "string" ? "transcript" : "text";
         // Idempotent on a repeated completed event already decorated by this controller.
-        const expectedFooter = citationFooter(active.references || []);
+        const expectedFooter = citationFooter(active.citations || []);
         const text = expectedFooter && event[field]?.endsWith(expectedFooter) ? event[field].slice(0, -expectedFooter.length) : event[field];
         active.sourceReplyAccepted = !active.scriptedText || matchesBoundedReply(text, active.scriptedText);
         if (active.scriptedText) trace("bounded_reply_checked", { turn_id: active.id,

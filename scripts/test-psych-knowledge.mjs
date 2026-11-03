@@ -233,6 +233,7 @@ test("informational questions ground in matching passages; sharing, diagnosis as
     assert.equal(result.route, "kb_grounded", query); assert.equal(result.replyMode, "grounded");
     assert.match(result.references[0].title, pattern, query); assert.ok(result.passageIds.length >= 1 && result.passageIds.length <= 2);
     assert.ok(result.instructions.startsWith(PSYCH_SUPPORT_INSTRUCTIONS)); assert.match(result.instructions, /本輪檢索到的文章段落/);
+    assert.deepEqual(result.citations, [], query);
     assert.ok(result.instructions.length < PSYCH_SUPPORT_INSTRUCTIONS.length + 1800, `${query} ${result.instructions.length}`);
   }
   for (const query of ["我今天好累", "我最近都睡不著", "我媽一直罵我，為什麼會這樣", "為什麼我會一直想哭", "量子糾纏是什麼", "這樣正常嗎",

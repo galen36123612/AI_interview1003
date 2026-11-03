@@ -39,6 +39,7 @@ test("article content answers come only from the selected article's own passages
     assert.equal(result.replyMode, "grounded"); assert.equal(result.sourceMode, "passages");
     assert.deepEqual(result.references.map((a) => a.id), [bully]);
     assert.ok(result.passageIds.length >= 1 && result.passageIds.every((id) => id.startsWith(`${bully}#`)), text);
+    assert.deepEqual(result.citations, [], text);
     assert.match(result.instructions, /本輪檢索到的文章段落/); assert.match(result.instructions, /段落沒寫的不要補成文章內容/);
     for (const snippet of foreign) assert.ok(!result.instructions.includes(snippet), snippet);
   }
@@ -86,7 +87,11 @@ test("knowledge replies retain history for model safety judgement and constrain 
   assert.equal(h.response().response.input, undefined);
   assert.equal(h.response().response.metadata.article_ids, bully);
   assert.equal(h.response().response.metadata.knowledge_route, "article_content");
-  assert.equal(h.response().response.max_output_tokens, 1280); h.finish();
+  assert.equal(h.response().response.max_output_tokens, 1280);
+  // A grounded reply carries no link footer; the earlier article request did.
+  const grounded = { type: "response.output_audio_transcript.done", response_id: "resp_synthetic", transcript: "synthetic grounded reply" };
+  h.ctrl.handle({ type: "response.created", response: { id: "resp_synthetic", metadata: h.response().response.metadata } });
+  h.ctrl.handle(grounded); assert.equal(grounded.transcript, "synthetic grounded reply"); h.finish();
   h.text("不用文章，幫我寫一句跟老師開口的台詞");
   assert.equal(h.response().response.input, undefined);
   assert.equal(h.response().response.metadata.knowledge_route, "wording");
