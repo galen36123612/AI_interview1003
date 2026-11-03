@@ -5,11 +5,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run knowledge:check && next build",
     "start": "next start",
-    "lint": "eslint src/app/App.tsx src/app/page.tsx src/app/layout.tsx src/app/components/Transcript.tsx src/app/agentConfigs/index.ts src/app/agentConfigs/psychologicalSupport.ts src/app/psych-support/PsychSupportClient.tsx src/app/psych-support/page.tsx src/app/psych-support/session.mjs src/app/psych-support/transcript.mjs src/app/psych-support/turns.mjs src/app/psych-support/safety.mjs src/app/api/session/route.ts src/app/api/psych/session/route.ts scripts/test-psych-preview.mjs scripts/test-psych-turns.mjs scripts/test-psych-safety.mjs --max-warnings=0",
+    "lint": "eslint src/app/App.tsx src/app/page.tsx src/app/layout.tsx src/app/components/Transcript.tsx src/app/agentConfigs/index.ts src/app/agentConfigs/psychologicalSupport.ts src/app/psych-support/PsychSupportClient.tsx src/app/psych-support/page.tsx src/app/psych-support/session.mjs src/app/psych-support/transcript.mjs src/app/psych-support/turns.mjs src/app/psych-support/safety.mjs src/app/psych-support/knowledge.mjs src/app/psych-support/diagnostics.mjs src/app/api/session/route.ts src/app/api/psych/session/route.ts scripts/test-psych-preview.mjs scripts/test-psych-turns.mjs scripts/test-psych-safety.mjs scripts/build-psych-knowledge.mjs scripts/test-psych-knowledge.mjs scripts/test-psych-boundaries.mjs --max-warnings=0",
     "test": "node --test scripts/test-psych-*.mjs",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run test && npm run build",
+    "knowledge:build": "node scripts/build-psych-knowledge.mjs",
+    "knowledge:check": "node scripts/build-psych-knowledge.mjs --check"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.2",

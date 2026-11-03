@@ -26,7 +26,10 @@ test("text is sent verbatim and gets one response only after server acknowledgem
   assert.equal(h.mic.at(-1), false);
   h.ctrl.handle(ack(item)); h.ctrl.handle(ack(item));
   assert.equal(h.replies().length, 1);
-  assert.deepEqual(h.replies()[0].response.metadata, { turn_id: "t1", input_kind: "text" });
+  assert.equal(h.replies()[0].response.metadata.turn_id, "t1");
+  assert.equal(h.replies()[0].response.metadata.input_kind, "text");
+  assert.equal(h.replies()[0].response.metadata.knowledge_route, "core_only");
+  assert.equal(h.replies()[0].response.metadata.context_mode, "conversation");
 });
 
 test("empty speech does not restart greeting, interrupt playback, or trigger a reply", () => {
@@ -161,4 +164,72 @@ test("UI error diagnostics include only validated code/parameter, never raw payl
   assert.match(safe, /invalid_value/); assert.match(safe, /item.id/); assert.ok(!safe.includes("synthetic-secret"));
   const unsafe = describeRealtimeError({ code: "Bearer synthetic-secret", param: "user content / synthetic-secret", message: "synthetic-secret" });
   assert.ok(!unsafe.includes("synthetic-secret")); assert.match(unsafe, /unknown_error/);
+});
+
+test("an open safety concern carries into a new controller and is reported as it changes", () => {
+  const changes = [];
+  const h0 = harness();
+  const first = createTurnController({ send: (e) => h0.sent.push(e), setMicrophoneEnabled() {}, onDiscard() {}, onNotice() {},
+    onConcernChange: (c) => changes.push(c) });
+  const item = textItem("m1", "我剛剛吞了一整瓶媽媽的安眠藥");
+  first.submitText(item); first.handle(ack(item));
+  assert.equal(first.concern(), "medical"); assert.deepEqual(changes, ["medical"]);
+  first.dispose();
+  // Reconnect (e.g. after the 10-minute limit): the caller passes the last concern back in.
+  const sent = [];
+  const second = createTurnController({ send: (e) => sent.push(e), setMicrophoneEnabled() {}, onDiscard() {}, onNotice() {},
+    initialConcern: "medical", onConcernChange: (c) => changes.push(c) });
+  const bye = textItem("m2", "謝謝你，我先去睡了");
+  second.submitText(bye); second.handle(ack(bye));
+  const reply = sent.find((e) => e.type === "response.create");
+  assert.equal(reply.response.metadata.safety_mode, "medical"); assert.deepEqual(reply.response.input, []);
+  assert.match(reply.response.instructions, /立即撥打 119/);
+  assert.equal(second.concern(), "medical"); assert.deepEqual(changes, ["medical"]);
+  // Without the carry-over the same goodbye would be an ordinary turn.
+  const sent2 = [];
+  const third = createTurnController({ send: (e) => sent2.push(e), setMicrophoneEnabled() {}, onDiscard() {}, onNotice() {} });
+  third.submitText(bye); third.handle(ack(bye));
+  assert.equal(sent2.find((e) => e.type === "response.create").response.metadata.safety_mode, undefined);
+});
+
+test("ordinary replies wait for the pacing delay and carry an output budget; safety replies do not wait", () => {
+  const timers = [];
+  const sent = [];
+  const ctrl = createTurnController({ send: (e) => sent.push(e), setMicrophoneEnabled() {}, onDiscard() {}, onNotice() {},
+    replyDelayMs: 1500, schedule: (fn, ms) => { timers.push({ fn, ms, live: true }); return timers.length - 1; },
+    cancelScheduled: (id) => { timers[id].live = false; } });
+  const replies = () => sent.filter((e) => e.type === "response.create");
+  const item = textItem("d1", "最近壓力好大");
+  ctrl.submitText(item); ctrl.handle(ack(item));
+  assert.equal(replies().length, 0); assert.equal(timers.length, 1); assert.equal(timers[0].ms, 1500);
+  timers[0].fn();
+  assert.equal(replies().length, 1); assert.equal(replies()[0].response.max_output_tokens, 768);
+  assert.equal(replies()[0].response.metadata.turn_id, "d1");
+  ctrl.handle(created("r1", "d1")); ctrl.handle(done("r1"));
+  // A newer message during the wait drops the waiting turn without a response.cancel.
+  const a = textItem("d2", "其實也沒什麼"); ctrl.submitText(a); ctrl.handle(ack(a));
+  assert.equal(timers.length, 2);
+  const b = textItem("d3", "算了不說了"); ctrl.submitText(b); ctrl.handle(ack(b));
+  assert.equal(timers[1].live, false); assert.equal(sent.filter((e) => e.type === "response.cancel").length, 0);
+  timers[1].fn(); // stale timer firing anyway must not request a reply for d2
+  assert.equal(replies().length, 1);
+  timers[2].fn();
+  assert.equal(replies().length, 2); assert.equal(replies()[1].response.metadata.turn_id, "d3");
+  ctrl.handle(created("r3", "d3")); ctrl.handle(done("r3"));
+  // Safety turns are requested immediately with their own budget.
+  const s = textItem("d4", "我現在有傷害自己的念頭"); ctrl.submitText(s); ctrl.handle(ack(s));
+  assert.equal(replies().length, 3); assert.equal(replies()[2].response.max_output_tokens, 1536);
+  assert.equal(timers.length, 3);
+});
+
+test("response usage is traced as counts only", () => {
+  const traces = [];
+  const sent = [];
+  const ctrl = createTurnController({ send: (e) => sent.push(e), setMicrophoneEnabled() {}, onDiscard() {}, onNotice() {}, onTrace: (r) => traces.push(r) });
+  const item = textItem("u1", "你好"); ctrl.submitText(item); ctrl.handle(ack(item)); ctrl.handle(created("r1", "u1"));
+  ctrl.handle({ type: "response.done", response: { id: "r1", status: "completed",
+    usage: { output_tokens: 210, output_token_details: { audio_tokens: 180, text_tokens: 30 } } } });
+  const finished = traces.find((r) => r.phase === "response_finished");
+  assert.equal(finished.output_tokens, 210); assert.equal(finished.output_audio_tokens, 180); assert.equal(finished.output_text_tokens, 30);
+  assert.ok(!JSON.stringify(finished).includes("你好"));
 });
