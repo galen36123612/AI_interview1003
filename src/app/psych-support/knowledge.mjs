@@ -140,9 +140,12 @@ export function routeKnowledge(text, previous = null) {
     nextIds = articles.map((a) => a.id);
     script = "我目前只有文章的標題與原文連結，沒有讀取正文，不能替作者整理具體建議或引用原文。你可以開啟原文閱讀。";
   } else if (!conversationalPriority && (articleIntent(input) || pointer.test(input)
-      || (state.awaitingMenuChoice && !guideId && menuChoice(input) && input.length <= 16))) {
+      // A short category pick counts as an article request after the menu, or right after an
+      // article reply (「焦慮那個」 = a different article); otherwise the model would have to guess a title.
+      || ((state.awaitingMenuChoice || state.articleIds.length > 0) && !guideId && menuChoice(input) && input.length <= 16))) {
     const limit = /兩篇|2篇|兩個|2個/.test(input) ? 2 : 1;
-    const chosen = state.awaitingMenuChoice ? menuChoice(input) : null;
+    const chosen = (state.awaitingMenuChoice || state.articleIds.length > 0) && !pointer.test(input) && !articleIntent(input)
+      ? menuChoice(input) : null;
     if (chosen && !pointer.test(input)) {
       // The user's own word wins (e.g. 霸凌 inside the 霸凌與拒學 category); the category words are the fallback.
       articles = rankArticles(input, limit);

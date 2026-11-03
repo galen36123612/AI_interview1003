@@ -179,8 +179,16 @@ test("no article match offers the index menu, and a plain menu choice on the nex
   // A specific word inside a category picks the matching article, not the category's first one.
   assert.match(routeKnowledge("霸凌", menu.state).references[0].title, /霸凌/);
   assert.match(routeKnowledge("睡眠與失眠", menu.state).references[0].title, /失眠/);
-  // Without the pending menu, the same short reply is ordinary conversation.
+  // Without the pending menu or a previous article, the same short reply is ordinary conversation.
   assert.equal(routeKnowledge("焦慮那個").route, "core_only");
+  // Live regression: right after an article reply, a short category pick asks for a different article
+  // instead of letting the model invent a title.
+  const after = routeKnowledge("有沒有什麼文章可以看", routeKnowledge("跟爸媽講，他們只會說我想太多").state);
+  assert.equal(after.route, "article_index"); assert.match(after.references[0].title, /原生家庭/);
+  const other = routeKnowledge("焦慮那個", after.state);
+  assert.equal(other.route, "article_index"); assert.match(other.references[0].title, /焦慮/);
+  assert.equal(routeKnowledge("那篇在講什麼？幫我摘要一下", other.state).route, "article_content_unavailable");
+  assert.equal(routeKnowledge("我今天好累", after.state).route, "core_only");
   assert.equal(routeKnowledge("我今天好累", menu.state).route, "core_only");
   // A long message is not treated as a menu pick even if it contains a category word.
   assert.equal(routeKnowledge("其實我最近常常焦慮，跟爸媽講他們都覺得我想太多，我也不知道該怎麼辦才好", menu.state).route, "one_step");
