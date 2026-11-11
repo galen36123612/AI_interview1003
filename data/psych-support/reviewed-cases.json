@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "notice": "Empty by design. Real ESConv/ED cases remain unapproved. This file contains only an eventual reviewed export, never raw corpora or target/audit-only fields.",
+  "cases": []
+}

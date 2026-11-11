@@ -15,3 +15,4 @@ research/psych-support/reference/sample_cards.jsonl
 **/raw_transcripts/
 **/sensitive_logs/
 env
+data/psych-support/private/
