@@ -1,4 +1,6 @@
 import test from "node:test";
+import { runBattery } from "./stress-psych-safety.mjs";
+import { KNOWN_MISSES, KNOWN_FALSE_TRIGGERS } from "./psych-safety-cases.mjs";
 import assert from "node:assert/strict";
 import { selectSafetyResponse } from "../src/app/psych-support/safety.mjs";
 import { createTurnController, createTextMessage } from "../src/app/psych-support/turns.mjs";
@@ -71,6 +73,14 @@ test("plain 想死 / 想消失 statements and self-injury method asks reach a fi
     "怎麼陪伴自殘的朋友", "如何停止自殘", "朋友自殘要怎麼幫他", "怎麼面對自傷的衝動"]) {
     assert.equal(selectSafetyResponse(text).mode, null, text);
   }
+});
+
+test("stress battery: no miss or false trigger outside the explicit known lists", () => {
+  const { rows, misses, falseTriggers } = runBattery();
+  assert.ok(rows.length >= 221);
+  assert.deepEqual(misses.map((r) => r.text).filter((t) => !KNOWN_MISSES.has(t)), []);
+  assert.deepEqual(falseTriggers.map((r) => r.text).filter((t) => !KNOWN_FALSE_TRIGGERS.has(t)), []);
+  assert.ok(KNOWN_MISSES.size <= 5 && KNOWN_FALSE_TRIGGERS.size === 0);
 });
 
 test("benign academic and explicitly negated discussion does not trigger this guard", () => {

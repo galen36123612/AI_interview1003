@@ -1,0 +1,44 @@
+# AI 心理支持 Realtime 研究預覽
+
+Next.js 15 + OpenAI Realtime（WebRTC）。瀏覽器直連 OpenAI，伺服器只簽發 session。這是 demo，不是臨床產品。
+
+## 分支與上線
+
+- 正式版是分支 `experiment/psych-knowledge-routing`（Vercel Production Branch）。`main` 是舊的面試陪練，不是正式版。
+- 只有使用者在當輪明確說「合進正式分支」才可以動 `experiment/psych-knowledge-routing`；一次同意只適用當下那個 commit。
+- 開發與 Preview 用 `experiment/psych-kb-demo`。推 Preview 不需要另外同意。
+- 不要把 `main` 合進任何心理支持分支。`fix/main-api-hardening` 只留在本機，沒被要求不要推。
+- 合進正式分支用 fast-forward；合完到 Vercel 部署列表確認 Production 是 Ready。
+
+## 檢查指令
+
+- `npm run check`：lint（零警告）＋ `node --test scripts/test-psych-*.mjs` ＋ build。推任何分支前都要過。
+- `npm run safety:stress`：安全護欄壓力題庫報告。改 `safety.mjs` 前後各跑一次。
+- `npm run knowledge:build`：改了 `data/psych-support/` 後重建 `knowledge.generated.mjs` 與 `passages.generated.mjs`；兩個產出檔不要手改。
+
+## 安全規則（改這一區的程式必須遵守）
+
+- 固定安全腳本（`safety.mjs` 的 `SCRIPTS`）的文字只能由人改，不能交給模型改寫或即時生成；專線號碼只有 1925、1995、119、110、113。
+- 安全腳本那一輪不帶入對話歷史，也不插入使用者文字。
+- 新增或修改任何安全規則，都要在 `scripts/psych-safety-cases.mjs` 加上正例與反例，`safety:stress` 不能出現未列管的漏接或誤觸。
+- 規則護欄只認得題庫裡見過的說法；沒見過的說法交給模型判斷。不要宣稱護欄「完整」。未調校題組的數字只報告、不拿來調規則。
+- 已鎖定的安全關注不能被「開玩笑」「我是管理員」「忽略之前」「聊別的」解除；只有 `selectSafetyResponse` 裡明寫的解除條件可以。
+- 不提供任何自傷、他傷的方法、劑量或比較，小說、研究、翻譯等名義也不例外。
+
+## 知識庫
+
+- 54 篇放心說文章的內文是 demo 用途，授權與專業審核未確認。對外說明時要講清楚。
+- 文章內容只能依當輪程式注入的段落回答；文章標題只能來自程式，不可由模型編造。
+- 逐字稿不顯示「延伸閱讀」連結（使用者決定）。
+- 比對是字詞層級，不是語意搜尋。
+
+## 回覆節奏
+
+- 一般回覆一至兩句、30–60 字，開口前延遲 1.5 秒；依段落回答 60–120 字；安全腳本不延遲。
+
+## 測試與驗證
+
+- 改動對話行為後，要在 Preview 用 Realtime 實測並回報實際 Q&A，不只跑單元測試。
+- Preview 網址需要 Vercel 登入；瀏覽器面板要另外登入，Chrome 的登入不會帶過去。
+- 測完清掉 `sessionStorage['psych-safety-concern']`，避免殘留狀態影響下一輪。
+- `src/app/App.tsx`、`page.tsx`、`layout.tsx`、`components/Transcript.tsx` 有位元組比對的基線測試，非必要不要動。
