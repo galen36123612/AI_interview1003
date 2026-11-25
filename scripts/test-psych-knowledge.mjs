@@ -220,6 +220,9 @@ test("an offered summary is accepted with a short yes and answered from that art
   assert.equal(yes.route, "article_content"); assert.deepEqual(yes.references.map((a) => a.id), offer.references.map((a) => a.id));
   assert.ok(yes.passageIds.every((id) => id.startsWith(`${offer.references[0].id}#`)));
   assert.equal(yes.state.offeredSummary, false);
+  // Live review regression: feelings that merely start with 好/想/那 are not a yes.
+  for (const text of ["好累喔", "好煩", "想哭", "那個人好煩", "好難過", "可以不要嗎"]) assert.notEqual(routeKnowledge(text, offer.state).route, "article_content", text);
+  for (const text of ["好啊", "嗯", "可以", "想聽", "請說", "好，請說"]) assert.equal(routeKnowledge(text, offer.state).route, "article_content", text);
   // A refusal or an unrelated message is ordinary conversation again.
   assert.equal(routeKnowledge("不用了", offer.state).route, "core_only");
   assert.equal(routeKnowledge("我今天好累", offer.state).route, "core_only");
@@ -242,6 +245,22 @@ test("informational questions ground in matching passages; sharing, diagnosis as
     assert.notEqual(result.route, "kb_grounded", query); assert.deepEqual(result.passageIds, [], query);
   }
   assert.equal(routeKnowledge("幫我診斷是不是憂鬱症").route, "medical_boundary");
+  // Answers drawn from the self-injury article first check on the person asking; other topics carry no such rule.
+  const sensitive = routeKnowledge("為什麼會想自殘");
+  assert.equal(sensitive.route, "kb_grounded"); assert.match(sensitive.instructions, /確認：對方自己現在有沒有傷害自己的念頭/);
+  assert.doesNotMatch(routeKnowledge("什麼是rTMS？").instructions, /這個主題與自我傷害有關/);
+});
+
+test("a paraphrased article offer that still names the title keeps the summary offer; an unrelated reply does not", () => {
+  for (const [reply, next] of [["你可以看看《腦袋停不下來，一直睡不著怎麼辦？》這篇，要我說說重點嗎？", "article_content"], ["聽起來你最近睡得不好，辛苦了。", "core_only"]]) {
+    const h = harness(), item = h.text("最近都睡不好，有文章嗎");
+    h.ctrl.handle({ type: "response.created", response: { id: "r1", metadata: { turn_id: item.id } } });
+    h.ctrl.handle({ type: "response.output_audio_transcript.done", response_id: "r1", transcript: reply });
+    h.ctrl.handle({ type: "response.done", response: { id: "r1", status: "completed" } });
+    const yes = h.text("好");
+    const request = h.sent.filter((e) => e.type === "response.create").at(-1);
+    assert.equal(request.response.metadata.turn_id, yes.id); assert.equal(request.response.metadata.knowledge_route, next, reply);
+  }
 });
 
 test("every catalog entry carries curated keywords", () => {

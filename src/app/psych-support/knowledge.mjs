@@ -136,8 +136,11 @@ const GROUNDED_RULES = "下列段落是程式從放心說文章索引取出的�
 const passageBlock = (hits) => hits.map(({ passage }) => `《${catalog.get(passage.a).title}》${passage.h ? `｜${passage.h}` : ""}\n${passage.t}`).join("\n\n");
 // Informational asks (what is / why / how to improve / symptoms / treatment) may be grounded in passages; plain sharing is not.
 const infoAsk = /是什麼|什麼是|為什麼會|為何|是不是.{0,4}(?:症|病)|(?:小孩|孩子|家人|朋友|同學|伴侶|另一半|學生)[^。我]{0,12}怎麼(?:辦|陪|幫)|有什麼(?:症狀|方法|差別|不同|原因|影響)|症狀|治療|副作用|怎麼(?:改善|判斷|分辨|區分|緩解|處理|預防|幫助|陪伴|照顧|面對)|如何(?:改善|判斷|緩解|處理|預防|幫助|陪伴|面對)|正常嗎|算不算|哪一科|看什麼科|檢測|量表|自我測|費用|多少錢|有效嗎|有用嗎|差在哪|差別/;
-const acceptsOffer = (input) => input.trim().length <= 12 && !/不|別|免|算了/.test(input)
-  && /^(?:好|要|嗯|可以|想|請|麻煩|說|講|ok|好啊|好的|想聽|聽|第[一二12]篇|那)/i.test(input.trim());
+// A whole affirmative phrase only: 「好累喔」「好煩」「想哭」 are feelings, not a yes.
+const acceptsOffer = (input) => /^(?:好|好啊|好呀|好喔|好的|好哦|嗯|嗯嗯|對|要|我要|可以|可以啊|想|想聽|我想聽|請說|說吧|講吧|說說看|聽聽看|麻煩你|麻煩了|ok|okay|yes|好[，, ]?請說|那你說|那說吧|(?:聽|說|講)?第[一二12]篇)[。！!～~.\s]*$/i.test(input.trim());
+// Articles about self-injury: an answer drawn from them first checks on the person asking.
+const SENSITIVE_ARTICLES = new Set(["supporting-those-who-self-harm"]);
+const SENSITIVE_RULE = "這個主題與自我傷害有關。開口先用一句話直接而溫和地確認：對方自己現在有沒有傷害自己的念頭、現在安不安全；再簡短說一個重點。對方若表示有念頭或已受傷，停止說明文章，依安全規則引導現在聯絡可信任的真人或 1925 安心專線，有立即危險撥打 119。不描述任何傷害方式。";
 
 function previousState(value) {
   const state = typeof value === "string" ? { topic: value } : value || {};
@@ -250,7 +253,7 @@ export function routeKnowledge(text, previous = null) {
   const addition = script
     ? `這輪是程式確認的資料能力邊界回覆，不是首次招呼。本輪沒有載入文章段落；不能把一般常識說成文章內容。先考慮整段對話的安全；仍有危險訊號就遵循核心安全原則，不查文章。沒有安全疑慮時只逐字說下列固定文字，不新增解釋、建議、引文或網址。之前的助理回覆也不是文章正文或經核實的依據。原文連結由程式附上。\n固定文字：${JSON.stringify(script)}`
     : passages.length
-      ? `${guideId ? `${KNOWLEDGE.guides.find((g) => g.id === guideId).guidance}\n` : ""}# 本輪檢索到的文章段落\n${GROUNDED_RULES}\n\n${passageBlock(passages)}`
+      ? `${guideId ? `${KNOWLEDGE.guides.find((g) => g.id === guideId).guidance}\n` : ""}# 本輪檢索到的文章段落\n${GROUNDED_RULES}${passages.some((hit) => SENSITIVE_ARTICLES.has(hit.passage.a)) ? `\n${SENSITIVE_RULE}` : ""}\n\n${passageBlock(passages)}`
       : guideId ? KNOWLEDGE.guides.find((g) => g.id === guideId).guidance : "這輪只使用常駐原則，不載入文章或案例。";
   return { topic, state: { topic, articleIds: nextIds, topicArticleIds, awaitingMenuChoice, offeredSummary }, route,
     guideId: script ? null : guideId, replyMode: script ? "bounded_script" : passages.length ? "grounded" : "conversation", scriptedText: script,
@@ -266,6 +269,13 @@ export function routeKnowledge(text, previous = null) {
 export function matchesBoundedReply(actual, expected) {
   const normalize = (value) => value.normalize("NFKC").replace(/[\p{P}\p{Z}\s]/gu, "").replace(/^(?:好的|好|嗯)/u, "");
   return typeof actual === "string" && typeof expected === "string" && normalize(actual) === normalize(expected);
+}
+
+/** A paraphrased article reply still counts as presenting the article when it names every referenced title. */
+export function namesReferences(actual, references) {
+  const normalize = (value) => value.normalize("NFKC").replace(/[\p{P}\p{Z}\s]/gu, "");
+  return typeof actual === "string" && Array.isArray(references) && references.length > 0
+    && references.every((a) => normalize(actual).includes(normalize(a.title).slice(0, 8)));
 }
 
 /** Trusted catalog links for display; model-generated URLs are never a source. */

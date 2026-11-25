@@ -19,12 +19,14 @@ const SCRIPTS = Object.freeze({
 function explicitConcern(text) {
   // Negate only the local phrase, never a whole turn containing mixed statements.
   const positive = text.replace(/(?:自殺|自杀)(?:防治|預防|预防|宣導|宣导|教材)/g, "安全教育")
-    .replace(/(?:沒有|没有|不會|不会|不想|不打算|無意|无意)[^，。！？；\n]{0,8}(?:傷害自己|伤害自己|自傷|自伤|自殺|自杀|傷害別人|伤害别人|消失|死掉)/g, "");
+    .replace(/(?:沒有|没有|不會|不会|不想|不打算|無意|无意)[^，。！？；\n]{0,8}(?:傷害自己|伤害自己|自傷|自伤|自殺|自杀|傷害別人|伤害别人|消失|死掉|死)/g, "");
   if (/(?:我|同學|同学|朋友|孩子|他|她)[^。！？；\n]{0,28}(?:已經|已经|剛才|刚才|剛剛|刚刚|正在)[^。！？；\n]{0,16}(?:吞了|吞下|吃了很多藥|吃了很多药|服用過量|服用过量|傷害自己|伤害自己|流血)/.test(positive)) return "medical";
   if (/我[^。！？；\n]{0,28}(?:想|要|打算|準備|准备|控制不住|忍不住)[^。！？；\n]{0,14}(?:傷害別人|伤害别人|傷害他|伤害他|傷害她|伤害她|打傷|打伤|殺人|杀人|殺了|杀了)/.test(positive)) return "others";
   if (/我[^。！？；\n]{0,28}(?:想|要|打算|準備|准备|念頭|念头|控制不住|忍不住)[^。！？；\n]{0,14}(?:傷害自己|伤害自己|自傷|自伤|自殺|自杀|結束生命|结束生命)/.test(positive)
     || /我[^。！？；\n]{0,12}(?:不想活|活不下去)/.test(positive)
     || /我[^。！？；\n]{0,20}(?:傷害自己|伤害自己|自殺|自杀)[^。！？；\n]{0,12}(?:念頭|念头|控制不住)/.test(positive)
+    // Plain 想死 / 想去死 / 好想死掉 (not 想死你了, 死心, 死線, or 累得要死-style idioms, which use 要 or another object).
+    || /想(?:要)?(?:去)?死(?!心|線|线|黨|党|機|机|記|记|角|板|守|背|你|妳|他|她|我了)/.test(positive)
     || /\bI (?:want|plan|am going) to (?:hurt myself|kill myself|end my life)\b/i.test(positive)) return "self";
   if (/(?:爸爸|媽媽|妈妈|家人|照顧者|照顾者|伴侶|伴侣)[^。！？；\n]{0,18}(?:現在|现在|正在|剛才|刚才|今晚)[^。！？；\n]{0,16}(?:打我|傷害我|伤害我|威脅我|威胁我)/.test(positive)) return "home";
   // Live B8 regression: possessions entrusted + farewell/last messages + a
@@ -42,7 +44,10 @@ function explicitConcern(text) {
   if (/(?:幾顆|多少顆|幾粒|多少粒|幾瓶|多少量|劑量|吃多少|吞多少)[^。！？；\n]{0,10}(?:才會死|會死|致死|才能死|會不會死|死掉)/.test(positive)
     || /(?:怎麼|怎樣|如何|什麼方法|哪種方法|用什麼)[^。！？；\n]{0,8}(?:死(?!心|線|线|黨|党|機|机|記|记|角|板|守|背|命地|命的)|自殺|自杀|結束生命|结束生命|不會痛|不会痛)/.test(positive)
     || /(?:最快|最不痛|不痛|最有效|最簡單|最简单)[^。！？；\n]{0,6}(?:死(?!心|線|线|黨|党|機|机|記|记|角|板|守|背)|自殺|自杀|的方法)/.test(positive)
-    || /(?:自殺|自杀|輕生|轻生)[^。！？；\n]{0,4}(?:方法|方式|步驟|步骤)/.test(positive)) return "method";
+    || /(?:自殺|自杀|輕生|轻生)[^。！？；\n]{0,4}(?:方法|方式|步驟|步骤)/.test(positive)
+    // Self-injury method asks without the word 死; asking how to stop, help or care for someone is not a method ask.
+    || /(?:怎麼|怎樣|如何|用什麼)(?![^。！？；\n]{0,3}(?:停止|不要|不再|戒|避免|幫|陪|面對|處理|克服|改善|照顧))[^。！？；\n]{0,3}(?:割腕|自殘|自残|自傷|自伤|傷害自己|伤害自己|割自己)(?!的)/.test(positive)
+    || /(?:割腕|自殘|自残|割自己)[^。！？；\n]{0,6}(?:比較不痛|比较不痛|不會痛|不会痛|才不痛|最不痛)/.test(positive)) return "method";
   // Indirect absence/burden wording without the word 自殺 (live B8-type cases).
   if (/我[^。！？；\n]{0,6}(?:不在了|不在的話|不在的话|消失了|消失的話|消失的话|死了|死掉|不存在)[^。！？；\n]{0,16}(?:比較好|比较好|更好|輕鬆|轻松|解脫|解脱|沒差|没差|不會有人|不会有人|負擔|负担|拖累)/.test(positive)
     || /(?:沒有|没有)我[^。！？；\n]{0,10}(?:比較好|比较好|更好|輕鬆|轻松|解脫|解脱)/.test(positive)
@@ -51,6 +56,7 @@ function explicitConcern(text) {
     || /不要再[^。！？；\n]{0,2}(?:醒來|醒来|起來|起来)/.test(positive)
     || /活著[^。！？；\n]{0,6}(?:沒有意義|没有意义|沒意義|没意义|沒有意思|沒意思|没意思)/.test(positive)
     || /(?:遺書|遗书|交代身後事|交代身后事)/.test(positive)
+    || /想(?:要|就這樣|就这样|直接|從這個世界|从这个世界|從世界上|从世界上)?(?:消失|不見|不见)(?!的)/.test(positive)
     || /(?:想|打算)[^。！？；\n]{0,6}(?:跳下去|跳樓|跳楼|跳下來|跳下来)/.test(positive)) return "check";
   return null;
 }

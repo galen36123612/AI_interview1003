@@ -1,5 +1,5 @@
 import { selectSafetyResponse } from "./safety.mjs";
-import { routeKnowledge, citationFooter, matchesBoundedReply } from "./knowledge.mjs";
+import { routeKnowledge, citationFooter, matchesBoundedReply, namesReferences } from "./knowledge.mjs";
 import { KNOWLEDGE } from "./knowledge.generated.mjs";
 import { diagnosticSink, createDiagnosticEmitter, safeErrorDetails } from "./diagnostics.mjs";
 
@@ -228,7 +228,9 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
         // Idempotent on a repeated completed event already decorated by this controller.
         const expectedFooter = citationFooter(active.citations || []);
         const text = expectedFooter && event[field]?.endsWith(expectedFooter) ? event[field].slice(0, -expectedFooter.length) : event[field];
-        active.sourceReplyAccepted = !active.scriptedText || matchesBoundedReply(text, active.scriptedText);
+        // Word-for-word, or a paraphrase that still names the offered article(s); anything else leaves state untouched.
+        active.sourceReplyAccepted = !active.scriptedText || matchesBoundedReply(text, active.scriptedText)
+          || namesReferences(text, active.references);
         if (active.scriptedText) trace("bounded_reply_checked", { turn_id: active.id,
           knowledge_route: active.knowledgeRoute, matches_script: active.sourceReplyAccepted });
         if (active.sourceReplyAccepted && active.nextKnowledgeState) knowledgeState = active.nextKnowledgeState;
