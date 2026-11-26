@@ -12,7 +12,7 @@ import { createTurnController, createTextMessage, describeRealtimeError } from "
 test("generated runtime data is reproducible, metadata-only and contains zero approved real cases", () => {
   const built = buildKnowledge();
   assert.equal(readFileSync(built.output, "utf8"), built.content);
-  assert.equal(KNOWLEDGE.articles.length, 54); assert.equal(KNOWLEDGE.guides.length, 7); assert.equal(KNOWLEDGE.cases.length, 0);
+  assert.equal(KNOWLEDGE.articles.length, 54); assert.equal(KNOWLEDGE.guides.length, 10); assert.equal(KNOWLEDGE.cases.length, 0);
   assert.deepEqual([1, 2, 3, 4, 5].map((page) => KNOWLEDGE.articles.filter((a) => a.source_page === page).length), [12, 12, 12, 12, 6]);
   for (const a of KNOWLEDGE.articles) {
     assert.deepEqual(Object.keys(a).sort(), ["id", "title", "url", "author", "date_published", "source_page", "keywords"].sort());
@@ -265,4 +265,20 @@ test("a paraphrased article offer that still names the title keeps the summary o
 
 test("every catalog entry carries curated keywords", () => {
   for (const article of KNOWLEDGE.articles) assert.ok(article.keywords.length >= 2, article.id);
+});
+
+test("reply-eval regressions: article choice, off-topic, soft signals and third-party risk", () => {
+  const route = (text) => routeKnowledge(text);
+  const support = route("怎麼陪伴憂鬱的家人？");
+  assert.equal(support.route, "kb_grounded");
+  assert.deepEqual(support.references.map((r) => r.id), ["how-to-help-depression"]);
+  assert.equal(route("幫我寫一段 Python 排序程式").route, "out_of_scope");
+  assert.equal(route("幫我寫一段話跟老師請假").route, "wording");
+  for (const text of ["同事一直逼我寫程式到半夜", "我報告寫不完壓力很大"]) assert.notEqual(route(text).route, "out_of_scope", text);
+  for (const text of ["我看不到未來", "再見了，謝謝你陪我", "我撐不下去了"]) assert.equal(route(text).route, "soft_check", text);
+  for (const text of ["再見", "我沒有希望的感覺已經好很多了", "好了我要去睡了，掰掰"]) assert.notEqual(route(text).route, "soft_check", text);
+  const friend = route("我朋友說他想自殺，我該怎麼辦");
+  assert.equal(friend.route, "third_party_risk");
+  assert.match(friend.instructions, /不是使用者本人/);
+  assert.notEqual(route("我朋友都不理我").route, "third_party_risk");
 });

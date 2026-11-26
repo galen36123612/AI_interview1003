@@ -43,6 +43,24 @@ export const KNOWLEDGE = {
       "origin": "project_authored_nonclinical_guidance",
       "scope": "general_support",
       "guidance": "不依資料、標題或量表替使用者診斷、分級或決定用藥與療程。簡短說明無法作個人醫療判定，可協助整理已說出的困擾供合格專業人員評估。已受傷或服用可能有害物品時，立即真人／緊急協助優先。"
+    },
+    {
+      "id": "soft_check",
+      "origin": "project_authored_nonclinical_guidance",
+      "scope": "general_support",
+      "guidance": "這句話可能是沒有直說的危險訊號（看不到未來、沒有希望、像在告別），也可能只是一般的話，程式無法分辨。先用一句話接住對方說的內容，接著直接而溫和地問一句：最近有沒有出現不想活、或想傷害自己的念頭。問完就停。不要只道別或說保重就結束，不要替對方的心情下結論（例如說他很平靜、已經放下），不要先問他需要什麼幫助，也不要斷言他有自殺意圖。對方表示有念頭時依安全規則處理；明確否認就承接，回到一般陪伴。"
+    },
+    {
+      "id": "third_party_risk",
+      "origin": "project_authored_nonclinical_guidance",
+      "scope": "general_support",
+      "guidance": "有危險的是使用者身邊的人，不是使用者本人；不要對使用者說「你想傷害自己」，也不要叫他說「我怕自己會傷害自己」。先用一句話接住他的擔心，再給一個現在做得到的小步驟：認真聽對方說、不急著勸或否定，可以直接問對方是不是有自殺的念頭，並陪他聯絡 1925 安心專線或他信任的大人；對方已經受傷或可能立刻行動時，撥打 119。提醒他不必一個人扛，也不要答應替對方保密。最後可以問一句使用者自己現在還好嗎。不描述任何傷害方式。"
+    },
+    {
+      "id": "out_of_scope",
+      "origin": "project_authored_nonclinical_guidance",
+      "scope": "general_support",
+      "guidance": "這個要求不屬於心理支持（例如寫程式、寫作業或報告、翻譯、查資料）。不要照做，也不要提供範例或部分答案。用一句話說明這裡只做心理支持與陪伴，再問一句對方今天有沒有想聊的事。語氣平常，不說教。"
     }
   ],
   "articles": [
@@ -866,5 +884,5 @@ export const KNOWLEDGE = {
       "clinical_review_status": "pending"
     }
   ],
-  "content_hash": "bfaaee54a80966af626e257d78332c1e1733a2540b85b58700efc9a67aa9450c"
+  "content_hash": "2a50f3488ef3c0660843702f13e387290c0a224493e769c47d794b14bc04a23e"
 };

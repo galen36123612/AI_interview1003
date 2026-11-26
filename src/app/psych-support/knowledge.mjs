@@ -77,13 +77,16 @@ function queryTokens(text) {
 }
 
 function scoreArticles(text) {
-  const searchText = normalized(expandQuery(text)), tokens = queryTokens(text);
+  const rawText = normalized(text), searchText = normalized(expandQuery(text)), tokens = queryTokens(text);
   // Common title words are not sufficient subject evidence. All 54 titles stay
   // searchable; curated keywords give stronger evidence.
   const subjectTokens = tokens.filter((token) => !backgroundWords.has(token)
     && KNOWLEDGE.articles.filter((a) => normalized(a.title).includes(token)).length <= 13);
   return KNOWLEDGE.articles.map((article) => ({ article, score:
-    article.keywords.reduce((n, word) => n + (searchText.includes(normalized(word)) ? backgroundWords.has(word) ? 2 : Math.min(word.length, 5) * 2 : 0), 0)
+    // A keyword the person actually said counts in full; one that only the synonym table added counts half,
+    // so 「陪伴憂鬱的家人」 ranks the depression-support article above the family-of-origin ones.
+    article.keywords.reduce((n, word) => n + (searchText.includes(normalized(word))
+      ? (backgroundWords.has(word) ? 2 : Math.min(word.length, 5) * 2) * (rawText.includes(normalized(word)) ? 1 : 0.5) : 0), 0)
     + subjectTokens.reduce((n, token) => n + (normalized(article.title).includes(token) ? token.length : 0), 0) }));
 }
 function rankArticles(text, limit) {
@@ -109,13 +112,15 @@ export function retrievePassages(text, { articleIds = null, limit = 3 } = {}) {
   const grams = new Set();
   for (const token of queryTokens(text)) for (const gram of bigrams(token)) grams.add(gram);
   if (!grams.size) return [];
+  // Bigrams the person actually said count in full; ones only the synonym table added count half.
+  const said = bigrams(text);
   const articleScores = new Map(scoreArticles(text).map(({ article, score }) => [article.id, score]));
   return passageIndex
     .filter(({ passage }) => !articleIds || articleIds.includes(passage.a))
     .map(({ passage, order, grams: own }) => {
       let score = 0, matched = 0;
-      for (const gram of grams) if (own.has(gram)) { score += rarity(gram); matched++; }
-      const articleScore = Math.min(articleScores.get(passage.a) || 0, 10);
+      for (const gram of grams) if (own.has(gram)) { score += rarity(gram) * (said.has(gram) ? 1 : 0.5); matched++; }
+      const articleScore = Math.min(articleScores.get(passage.a) || 0, 24);
       // Filler bigrams (一直、這樣、什麼) never ground a turn on their own: the article's curated
       // keywords or title must also match, and a single keyword needs strong article evidence.
       return { passage, order, matched, articleScore, evidence: articleScore > 0 && (matched >= 2 || articleScore >= 4),
@@ -132,7 +137,7 @@ function articlePassages(text, articleId, limit = 3) {
   return hits.sort((a, b) => a.order - b.order);
 }
 
-const GROUNDED_RULES = "下列段落是程式從放心說文章索引取出的原文片段（demo 用途），是本輪唯一可以描述文章內容的依據。只根據段落說，段落沒寫的不要補成文章內容，也不把一般常識說成文章的主張。用自己的話簡短說：先一句接住對方，再講一到兩個重點，約 60 到 120 字，最後可以問要不要繼續聽。提到來源時說《標題》。這是衛教資訊，不是對他的診斷；仍先考慮整段對話的安全訊號。";
+const GROUNDED_RULES = "下列段落是程式從放心說文章索引取出的原文片段（demo 用途），是本輪唯一可以描述文章內容的依據。只根據段落說，段落沒寫的不要補成文章內容，也不把一般常識說成文章的主張。用自己的話簡短說：先一句接住對方，再講一到兩個重點，約 60 到 120 字，最後可以問要不要繼續聽。方法與建議只說段落裡寫到的；段落只寫呼吸練習，就不要自己加上轉移注意力、數數字這類段落沒有的做法。提到來源時說《標題》。這是衛教資訊，不是對他的診斷；仍先考慮整段對話的安全訊號。";
 const passageBlock = (hits) => hits.map(({ passage }) => `《${catalog.get(passage.a).title}》${passage.h ? `｜${passage.h}` : ""}\n${passage.t}`).join("\n\n");
 // Informational asks (what is / why / how to improve / symptoms / treatment) may be grounded in passages; plain sharing is not.
 const infoAsk = /是什麼|什麼是|為什麼會|為何|是不是.{0,4}(?:症|病)|(?:小孩|孩子|家人|朋友|同學|伴侶|另一半|學生)[^。我]{0,12}怎麼(?:辦|陪|幫)|有什麼(?:症狀|方法|差別|不同|原因|影響)|症狀|治療|副作用|怎麼(?:改善|判斷|分辨|區分|緩解|處理|預防|幫助|陪伴|照顧|面對)|如何(?:改善|判斷|緩解|處理|預防|幫助|陪伴|面對)|正常嗎|算不算|哪一科|看什麼科|檢測|量表|自我測|費用|多少錢|有效嗎|有用嗎|差在哪|差別/;
@@ -141,6 +146,12 @@ const acceptsOffer = (input) => /^(?:好|好啊|好呀|好喔|好的|好哦|嗯|
 // Articles about self-injury: an answer drawn from them first checks on the person asking.
 const SENSITIVE_ARTICLES = new Set(["supporting-those-who-self-harm"]);
 const SENSITIVE_RULE = "這個主題與自我傷害有關。開口先用一句話直接而溫和地確認：對方自己現在有沒有傷害自己的念頭、現在安不安全；再簡短說一個重點。對方若表示有念頭或已受傷，停止說明文章，依安全規則引導現在聯絡可信任的真人或 1925 安心專線，有立即危險撥打 119。不描述任何傷害方式。";
+
+// Turn-level guidance for inputs the fixed safety scripts do not cover. These pick a guide for the
+// model; they are not a risk classifier and never replace the checks in safety.mjs.
+const thirdPartyRisk = /(?:朋友|同學|同事|室友|家人|男友|女友|男朋友|女朋友|老公|老婆|先生|太太|伴侶|孩子|小孩|兒子|女兒|哥哥|弟弟|姊姊|姐姐|妹妹|爸爸|媽媽|爸|媽|學生|他|她)[^。！？!?]{0,14}(?:想自殺|想死|想輕生|自殘|割腕|傷害自己|不想活)/;
+const softSignal = /看不[到見](?:未來|希望|出路|明天)|沒有(?:未來|希望|出路)了?(?![的可])|(?:人生|活著|一切|什麼)都?(?:沒有?|毫無)(?:意義|意思)|撐不(?:下去|住)了|再見了|永別|最後一次(?:跟你|和你|找你)?(?:說|聊|講)|以後不會再(?:來|打擾|煩)/;
+const outOfScope = /(?:幫我|替我|給我|請)[^。！？!?]{0,10}(?:寫|做|算|解|翻|查)[^。！？!?]{0,14}(?:程式|程式碼|python|javascript|java|sql|excel|code|演算法|作業|報告|論文|作文|履歷|數學|翻譯|食譜|股票)|^(?:請|可以|能不能|可不可以)?(?:寫|給我)[^。！？!?]{0,6}(?:程式|程式碼|python|javascript|sql|code)|翻譯成|翻成(?:英文|日文|中文)/i;
 
 function previousState(value) {
   const state = typeof value === "string" ? { topic: value } : value || {};
@@ -173,6 +184,9 @@ export function routeKnowledge(text, previous = null) {
     : explicitTopic ? [] : [...state.topicArticleIds];
   let guideId = null;
   if (/診斷|確診|藥物劑量|吃多少藥|怎麼用藥|開藥|治療計畫/.test(input)) guideId = "medical_boundary";
+  else if (thirdPartyRisk.test(input)) guideId = "third_party_risk";
+  else if (softSignal.test(input)) guideId = "soft_check";
+  else if (outOfScope.test(input)) guideId = "out_of_scope";
   else if (/只(?:要|想)?(?:聽|陪)|先聽我說|不用建議|不要(?:分析|建議)|只回/.test(input)) guideId = "listen";
   else if (/你(?:理解|聽|想)錯|不是這個意思|不要再猜/.test(input)) guideId = "repair";
   else if (/先這樣|不聊了|結束對話|先到這裡|晚安/.test(input)) guideId = "close";
@@ -182,7 +196,7 @@ export function routeKnowledge(text, previous = null) {
 
   let route = guideId || "core_only", articles = [], script = null, passages = [];
   let nextIds = [...state.articleIds];
-  const conversationalPriority = ["medical_boundary", "listen", "repair", "close"].includes(guideId);
+  const conversationalPriority = ["medical_boundary", "third_party_risk", "soft_check", "out_of_scope", "listen", "repair", "close"].includes(guideId);
   const sourceRequest = /esconv|empathetic\s*dialogues|未審核.{0,8}(?:案例|個案)|(?:案例|個案).{0,8}逐字稿/i.test(input)
     && /給我|提供|貼出|原始|案例|個案|審核|有沒有|是否|接入|用過|訓練|逐字稿/.test(input);
   const asksContent = contentAsk.test(input) && (/文章|作者|原文|正文/.test(input) || pointer.test(input)
