@@ -282,3 +282,9 @@ test("reply-eval regressions: article choice, off-topic, soft signals and third-
   assert.match(friend.instructions, /不是使用者本人/);
   assert.notEqual(route("我朋友都不理我").route, "third_party_risk");
 });
+
+test("a complaint that the reply was useless loads the repair guide; self-blame does not", () => {
+  assert.equal(routeKnowledge("你剛剛講的根本沒用").route, "repair");
+  assert.notEqual(routeKnowledge("我跟男朋友分手了，覺得自己很沒用").route, "repair");
+  assert.match(routeKnowledge("你可以直接告訴我該怎麼做嗎").instructions, /必須說出一個具體/);
+});

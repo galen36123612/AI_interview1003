@@ -24,13 +24,13 @@ export const KNOWLEDGE = {
       "id": "one_step",
       "origin": "project_authored_nonclinical_guidance",
       "scope": "general_support",
-      "guidance": "使用者主動要建議時，先給一個符合他已說限制的小步驟，保留選擇權。不要把每個困擾變成計畫表；已試過或拒絕的方法不重複。不得提供診斷、藥物、治療療程或高風險操作。"
+      "guidance": "使用者主動要建議。這一輪必須說出一個具體、現在做得到的小步驟，不能只反問或只說理解；先用半句話承接，接著直接給步驟，最後最多加一句確認適不適合。步驟要符合他已說的限制，保留選擇權。不要把每個困擾變成計畫表；已試過或拒絕的方法不重複。不得提供診斷、藥物、治療療程或高風險操作。"
     },
     {
       "id": "repair",
       "origin": "project_authored_nonclinical_guidance",
       "scope": "general_support",
-      "guidance": "若使用者說你理解錯了，簡短承認並更正；回到他這輪確認的意思，不辯解、不延續原先猜測。只重問仍必要的一個資訊。"
+      "guidance": "若使用者說你理解錯了，或說你剛才講的沒用、沒幫助，先簡短道歉或承認，不辯解、不延續原先猜測，也不要把上一輪問過的問題再問一次。理解錯時回到他這輪確認的意思，只重問仍必要的一個資訊；他說沒用時，改問他希望你怎麼回應比較有幫助，例如只聽他說，或給具體做法。"
     },
     {
       "id": "close",
@@ -884,5 +884,5 @@ export const KNOWLEDGE = {
       "clinical_review_status": "pending"
     }
   ],
-  "content_hash": "2a50f3488ef3c0660843702f13e387290c0a224493e769c47d794b14bc04a23e"
+  "content_hash": "4bd1489ac3334e92f731a2298c0cfeb249671523ce13626760cf6a40c5d53f9e"
 };
