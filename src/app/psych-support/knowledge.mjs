@@ -213,7 +213,7 @@ export function routeKnowledge(text, previous = null) {
     if (articles.length === 1) { route = "article_content"; passages = articlePassages(input, articles[0].id); }
     else {
       route = "article_selection_needed";
-      script = articles.length ? "你指的是哪一篇文章？告訴我標題或主題，我再說那篇的內容。" : "你想了解哪一篇文章的內容？告訴我主題，我找找索引裡有沒有。";
+      script = articles.length ? "你指的是哪一篇文章？告訴我標題或主題，我再說那篇的內容。" : "你想了解哪一篇文章的內容？告訴我主題，我找找看有沒有。";
     }
   } else if (!conversationalPriority && (articleIntent(input) || pointer.test(input)
       // A short category pick counts as an article request after the menu, or right after an
@@ -247,7 +247,7 @@ export function routeKnowledge(text, previous = null) {
     nextIds = articles.map((a) => a.id);
     if (!script) script = articles.length
       ? `可以參考${articles.map((a) => `《${a.title}》`).join("、")}。${articles.length > 1 ? "想聽哪一篇的重點？" : "想聽我簡單說這篇在講什麼嗎？"}`
-      : `目前本地索引沒有直接對應的文章。現有的主題是：${ARTICLE_MENU.map(([label]) => label).join("、")}。你想看哪一類？`;
+      : `我手邊沒有剛好談這個的文章。目前有的主題是：${ARTICLE_MENU.map(([label]) => label).join("、")}。有想看的嗎？或是直接跟我說說你的狀況也可以。`;
   }
   if (!script && !passages.length && !conversationalPriority && guideId !== "wording" && guideId !== "clarify" && infoAsk.test(input)) {
     // An informational question grounds in the best passages when the lexical evidence is strong enough.
