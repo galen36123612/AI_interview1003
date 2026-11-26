@@ -204,7 +204,7 @@ export function routeKnowledge(text, previous = null) {
 
   if (guideId !== "medical_boundary" && sourceRequest) {
     route = "source_unavailable";
-    script = "本專案尚未核准或接入 ESConv 與 EmpatheticDialogues 的原始對話案例，所以不能提供案例，也不能假裝已審核。";
+    script = "ESConv 和 EmpatheticDialogues 的原始對話案例沒有放進這裡，所以我沒辦法提供，也不會假裝有。";
   } else if (guideId !== "medical_boundary" && (asksContent || (state.offeredSummary && !guideId && acceptsOffer(input)))) {
     // Article content (demo scope): answer from this article's passages only.
     const refersToSelection = pointer.test(input) || (state.articleIds.length > 0 && (/它|文中|裡面/.test(input) || !asksContent));
@@ -213,7 +213,7 @@ export function routeKnowledge(text, previous = null) {
     if (articles.length === 1) { route = "article_content"; passages = articlePassages(input, articles[0].id); }
     else {
       route = "article_selection_needed";
-      script = articles.length ? "你指的是哪一篇文章？告訴我標題或主題，我再說那篇的內容。" : "你想了解哪一篇文章的內容？告訴我主題，我找找看有沒有。";
+      script = articles.length ? "你說的是哪一篇呢？跟我說標題或主題，我再講給你聽。" : "你想聽哪一篇呢？跟我說主題，我找找看有沒有。";
     }
   } else if (!conversationalPriority && (articleIntent(input) || pointer.test(input)
       // A short category pick counts as an article request after the menu, or right after an
@@ -234,7 +234,7 @@ export function routeKnowledge(text, previous = null) {
       articles = referredArticles(input, state);
       if (articles.length !== 1) {
         route = "article_selection_needed";
-        script = "你指的是哪一篇文章？告訴我標題或主題，我再說那篇的內容。";
+        script = "你說的是哪一篇呢？跟我說標題或主題，我再講給你聽。";
       } else route = "article_followup";
     } else {
       const tokens = queryTokens(input);
@@ -247,7 +247,7 @@ export function routeKnowledge(text, previous = null) {
     nextIds = articles.map((a) => a.id);
     if (!script) script = articles.length
       ? `可以參考${articles.map((a) => `《${a.title}》`).join("、")}。${articles.length > 1 ? "想聽哪一篇的重點？" : "想聽我簡單說這篇在講什麼嗎？"}`
-      : `我手邊沒有剛好談這個的文章。目前有的主題是：${ARTICLE_MENU.map(([label]) => label).join("、")}。有想看的嗎？或是直接跟我說說你的狀況也可以。`;
+      : `我手邊雖然沒有剛好談這個的文章，但有一些相近的主題，像${ARTICLE_MENU.map(([label]) => label).join("、")}。有想看的嗎？或是直接跟我說說你的狀況也可以。`;
   }
   if (!script && !passages.length && !conversationalPriority && guideId !== "wording" && guideId !== "clarify" && infoAsk.test(input)) {
     // An informational question grounds in the best passages when the lexical evidence is strong enough.

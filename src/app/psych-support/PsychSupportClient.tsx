@@ -24,11 +24,11 @@ const storeConcern = (concern: Concern) => {
   try { if (concern) sessionStorage.setItem(CONCERN_KEY, concern); else sessionStorage.removeItem(CONCERN_KEY); } catch { /* storage unavailable */ }
 };
 const SESSION_ENDED_BY_CONCERN: Record<string, string> = {
-  medical: "本次 10 分鐘測試已結束。你剛才提到已服用或受傷，請立即撥打 119，或請身邊的人代為撥打並陪著你；可重新開始對話。",
-  self: "本次 10 分鐘測試已結束。如果現在仍有傷害自己的念頭，請立即聯絡身邊可信任的人，或撥打 1925 安心專線；有立即危險請撥打 119 或 110。可重新開始對話。",
-  others: "本次 10 分鐘測試已結束。若仍可能傷害別人或自己，請立即撥打 110 或 119，並與對方保持距離。可重新開始對話。",
-  home: "本次 10 分鐘測試已結束。如果現在仍有人可能傷害你，請撥打 113 保護專線；有立即危險請撥打 110。可重新開始對話。",
-  check: "本次 10 分鐘測試已結束。如果你現在不安全或有傷害自己的念頭，請撥打 1925 安心專線；有立即危險請撥打 119 或 110。可重新開始對話。",
+  medical: "這次 10 分鐘的對話時間到了。你剛才提到已服用或受傷，請立即撥打 119，或請身邊的人代為撥打並陪著你；想繼續聊可以重新開始。",
+  self: "這次 10 分鐘的對話時間到了。如果現在仍有傷害自己的念頭，請立即聯絡身邊可信任的人，或撥打 1925 安心專線；有立即危險請撥打 119 或 110。想繼續聊可以重新開始。",
+  others: "這次 10 分鐘的對話時間到了。若仍可能傷害別人或自己，請立即撥打 110 或 119，並與對方保持距離。想繼續聊可以重新開始。",
+  home: "這次 10 分鐘的對話時間到了。如果現在仍有人可能傷害你，請撥打 113 保護專線；有立即危險請撥打 110。想繼續聊可以重新開始。",
+  check: "這次 10 分鐘的對話時間到了。如果你現在不安全或有傷害自己的念頭，請撥打 1925 安心專線；有立即危險請撥打 119 或 110。想繼續聊可以重新開始。",
 };
 
 export default function PsychSupportClient() {
@@ -135,7 +135,7 @@ export default function PsychSupportClient() {
         setStatus("connected");
         deadlineRef.current = setTimeout(() => {
           stop();
-          setError(SESSION_ENDED_BY_CONCERN[concernRef.current === "self_confirm" ? "self" : concernRef.current || ""] || "本次 10 分鐘測試已結束，可重新開始。");
+          setError(SESSION_ENDED_BY_CONCERN[concernRef.current === "self_confirm" ? "self" : concernRef.current || ""] || "這次 10 分鐘的對話時間到了，想繼續聊可以重新開始。");
         }, SESSION_LIMIT_MS);
         turnsRef.current = createTurnController({
           initialConcern: concernRef.current,
@@ -166,7 +166,7 @@ export default function PsychSupportClient() {
         }
       };
       channel.onclose = () => {
-        if (generation === generationRef.current) { stop(); setError("測試連線已關閉，請重新開始。"); }
+        if (generation === generationRef.current) { stop(); setError("連線結束了，請重新開始。"); }
       };
       channel.onmessage = ({ data }) => {
         if (generation !== generationRef.current) return;
@@ -178,7 +178,7 @@ export default function PsychSupportClient() {
         if (["output_audio_buffer.stopped", "output_audio_buffer.cleared"].includes(event.type)) setSpeaking(false);
         if (event.type === "input_audio_buffer.speech_started" && turnsRef.current.allowsVoice()) setListening(true);
         if (["input_audio_buffer.speech_stopped", "input_audio_buffer.committed"].includes(event.type)) setListening(false);
-        if (event.type === "response.done" && event.response?.status === "failed") setError("這次回應未完成，請重試或重新連線。");
+        if (event.type === "response.done" && event.response?.status === "failed") setError("這次沒有回完，請再說一次，或重新開始。");
         // Only surface errors that answer one of our events or that end the session. An
         // uncorrelated provider error with the reply still completing stays in the trace only.
         if (event.type === "error" && (event.error?.client_event_type
@@ -193,7 +193,7 @@ export default function PsychSupportClient() {
       });
       if (!result.ok) {
         const info = await result.json().catch(() => ({}));
-        throw new Error(info.error || "無法建立 Realtime 連線。");
+        throw new Error(info.error || "現在連不上，請稍後再試。");
       }
       if (generation !== generationRef.current) return;
       await pc.setRemoteDescription({ type: "answer", sdp: await result.text() });
@@ -255,7 +255,7 @@ export default function PsychSupportClient() {
     else togglePushToTalk();
   };
   const statusText = configured === false ? "尚未設定連線"
-    : error ? connected ? "回應異常，點此結束" : "連線失敗，點此重試"
+    : error ? connected ? "回應出了點問題，點此結束" : "連線失敗，點此重試"
       : playbackBlocked ? "點此播放語音"
         : inputNotice || (typing && connected ? "正在輸入文字" : "")
           || (status === "connecting" ? "正在連線…"

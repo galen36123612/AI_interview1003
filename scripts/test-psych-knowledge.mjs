@@ -172,7 +172,7 @@ test("fuzzy article requests map colloquial words onto the catalog vocabulary", 
 test("no article match offers the index menu, and a plain menu choice on the next turn selects an article", () => {
   const menu = routeKnowledge("推薦一篇文章給我");
   assert.equal(menu.route, "article_no_match"); assert.equal(menu.references.length, 0);
-  assert.match(menu.scriptedText, /目前有的主題是：睡眠與失眠/); assert.equal(menu.state.awaitingMenuChoice, true);
+  assert.match(menu.scriptedText, /相近的主題，像睡眠與失眠/); assert.equal(menu.state.awaitingMenuChoice, true);
   const chosen = routeKnowledge("焦慮那個", menu.state);
   assert.equal(chosen.route, "article_index"); assert.match(chosen.references[0].title, /焦慮/);
   assert.equal(chosen.state.awaitingMenuChoice, false);
