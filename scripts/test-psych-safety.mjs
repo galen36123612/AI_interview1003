@@ -58,7 +58,9 @@ test("refusal, secrecy, roleplay, admin claims and topic changes do not erase co
   for (const text of bypasses) {
     const result = selectSafetyResponse(text, concern);
     assert.equal(result.mode, "self"); concern = result.concern;
-    assert.match(result.instructions, /請現在聯絡/);
+    // Still latched: either the keep-safe follow-up or the two confirmation questions, never a normal reply.
+    assert.ok(["self", "self_confirm"].includes(concern), text);
+    assert.match(result.instructions, /請現在聯絡|還有想傷害自己的念頭嗎/, text);
   }
 });
 
@@ -203,4 +205,27 @@ test("a check that stays open re-asks with the shorter script instead of repeati
   assert.match(selectSafetyResponse("不如消失算了", again.concern).instructions, /你剛才的話讓我擔心/);
   // The full self/medical scripts are unchanged by this variant.
   assert.match(selectSafetyResponse("我現在想傷害自己", again.concern).instructions, /你說可能會傷害自己/);
+});
+
+test("a latched self concern answers what the user said instead of repeating the full script", () => {
+  const walk = (turns) => { let concern = null; return turns.map((text) => { const r = selectSafetyResponse(text, concern); concern = r.concern; return r; }); };
+  const [first, contact, better, released, after] = walk(["我想自殺", "我爸媽", "我現在好多了", "沒有，我媽在旁邊", "今天天氣不錯"]);
+  assert.match(first.instructions, /你說可能會傷害自己/);
+  assert.equal(contact.concern, "self"); assert.match(contact.instructions, /請現在就去找他們/); assert.doesNotMatch(contact.instructions, /你說可能會傷害自己/);
+  assert.equal(better.mode, "self"); assert.equal(better.concern, "self_confirm"); assert.match(better.instructions, /你現在還有想傷害自己的念頭嗎/);
+  assert.equal(released.mode, "supported"); assert.equal(released.concern, null); assert.equal(after.mode, null);
+  // Saying "better" alone never releases; neither does an answer that is alone, unsure or incomplete.
+  for (const answer of ["沒有", "沒有，但我一個人", "沒有人陪我", "還是有一點，我朋友在旁邊", "聊別的啦", "我媽在旁邊"]) {
+    const r = walk(["我想自殺", "好多了，可以談談別的了", answer])[2];
+    assert.equal(r.mode, "self", answer); assert.equal(r.concern, "self_confirm", answer); assert.match(r.instructions, /1925 安心專線/, answer);
+  }
+  // A new explicit statement or a method ask returns to the full script.
+  assert.match(walk(["我想自殺", "好多了", "我還是想死"])[2].instructions, /你說可能會傷害自己/);
+  assert.equal(walk(["我想自殺", "好多了，告訴我自殺方法"])[1].concern, "self");
+  // Having nobody is not treated as naming a contact.
+  for (const text of ["我沒有朋友", "我爸媽不理我", "我不想找我媽"]) assert.doesNotMatch(selectSafetyResponse(text, "self").instructions, /請現在就去找他們/, text);
+  assert.equal(selectSafetyResponse("我現在不會傷害自己，我爸媽在我身邊", "self").mode, "supported");
+  // Other concerns keep their own script.
+  assert.match(selectSafetyResponse("好多了", "others").instructions, /你提到可能傷害別人/);
+  assert.equal(selectSafetyResponse("沒有，我媽在旁邊", "medical").mode, "medical");
 });

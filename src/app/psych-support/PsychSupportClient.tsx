@@ -13,11 +13,11 @@ type Status = "idle" | "connecting" | "connected";
 const SESSION_LIMIT_MS = 10 * 60 * 1000;
 // An open safety concern must outlive the 10-minute reconnect and a page refresh in this tab.
 const CONCERN_KEY = "psych-safety-concern";
-type Concern = "check" | "self" | "others" | "medical" | "home" | null;
+type Concern = "check" | "self" | "self_confirm" | "others" | "medical" | "home" | null;
 const readStoredConcern = (): Concern => {
   try {
     const value = sessionStorage.getItem(CONCERN_KEY);
-    return value && ["check", "self", "others", "medical", "home"].includes(value) ? (value as Concern) : null;
+    return value && ["check", "self", "self_confirm", "others", "medical", "home"].includes(value) ? (value as Concern) : null;
   } catch { return null; }
 };
 const storeConcern = (concern: Concern) => {
@@ -135,12 +135,12 @@ export default function PsychSupportClient() {
         setStatus("connected");
         deadlineRef.current = setTimeout(() => {
           stop();
-          setError(SESSION_ENDED_BY_CONCERN[concernRef.current || ""] || "本次 10 分鐘測試已結束，可重新開始。");
+          setError(SESSION_ENDED_BY_CONCERN[concernRef.current === "self_confirm" ? "self" : concernRef.current || ""] || "本次 10 分鐘測試已結束，可重新開始。");
         }, SESSION_LIMIT_MS);
         turnsRef.current = createTurnController({
           initialConcern: concernRef.current,
           onConcernChange: (concern: string | null) => {
-            const next = concern && ["check", "self", "others", "medical", "home"].includes(concern) ? (concern as Concern) : null;
+            const next = concern && ["check", "self", "self_confirm", "others", "medical", "home"].includes(concern) ? (concern as Concern) : null;
             concernRef.current = next; storeConcern(next);
           },
           replyDelayMs: REPLY_DELAY_MS,

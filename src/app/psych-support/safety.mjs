@@ -13,6 +13,11 @@ const SCRIPTS = Object.freeze({
   method: "你問到會造成傷害的劑量或方法，我不能提供這類資訊，也不會幫你比較。我更在意的是你現在怎麼了：你現在有想傷害自己的念頭嗎？如果有，請現在聯絡安全、可信任的大人或身邊的人陪你，或撥打 1925 安心專線；若已經服用或受傷，立即撥打 119。我無法替你聯絡或到場。",
   // Spoken when a check is still open and the user deflects; shorter than the first ask so it does not sound like a loop.
   check_repeat: "我還是想先確認一下：你現在安全嗎？有沒有想傷害自己的念頭？如果有，請現在找身邊可信任的人陪你，或撥打 1925 安心專線；有立即危險就撥打 119 或 110。",
+  // Follow-ups while a self concern stays latched: the full script is spoken once, then the reply answers what the user said.
+  self_repeat: "我還是很在意你現在的安全。你現在身邊有人陪嗎？如果沒有，請現在聯絡一位可信任的人，或撥打 1925 安心專線，二十四小時都有人接；若可能立刻行動或已受傷，立即撥打 119 或 110。",
+  self_contact: "好，謝謝你告訴我。請現在就去找他們，或打電話給他們，直接說：『我怕自己會傷害自己，請現在陪我。』在他們來到你身邊之前，先不要獨處。如果聯絡不上，可以撥打 1925 安心專線；若可能立刻行動或已受傷，立即撥打 119 或 110。他們陪在你身邊之後，再告訴我。",
+  self_confirm: "聽到你說好一點了，謝謝你告訴我。在聊別的之前，我想先確認兩件事：你現在還有想傷害自己的念頭嗎？身邊有沒有人陪著你？",
+  self_confirm_repeat: "謝謝你回答。我還需要確認清楚這兩件事：你現在還有想傷害自己的念頭嗎？身邊有人陪著你嗎？如果還有念頭，或現在沒有人陪，請撥打 1925 安心專線；有立即危險就撥打 119 或 110。",
   supported: "你說現在沒有立即傷害的打算，而且已有可信任的人在身邊陪著，謝謝你告訴我。請先繼續和對方待在一起，把剛才的危險念頭告訴他；若危險再出現或已受傷，立即請對方協助撥打 119 或 110；想找人談時也可以撥打 1925 安心專線。我無法確認現場安全，也不能取代真人協助。",
 });
 
@@ -151,10 +156,19 @@ function baseConcern(text) {
   return null;
 }
 
+const PERSON = "(?:可信任的|信任的|老師|老师|輔導|辅导|心理師|媽媽|妈妈|爸爸|爸媽|爸妈|父母|我媽|我妈|我爸|家人|朋友|同學|同学|室友|同事|伴侶|伴侣|男友|女友|男朋友|女朋友|老公|老婆|先生|太太|哥哥|姊姊|姐姐|弟弟|妹妹|阿公|阿嬤|爺爺|奶奶|外公|外婆)";
+const WITH_ME = "(?:在我身邊|在我身边|在我旁邊|在我旁边|在旁邊|在旁边|陪著我|陪着我|正在陪我|陪我)";
+const ALONE = /一個人|一个人|獨自|独自|沒人|没人|沒有人|没有人|不在(?!意)|不理我|聯絡不上|联络不上|找不到人/;
+const BETTER = /好多了|好一點|好一点|好些了|好很多|冷靜下來|冷静下来|冷靜了|冷静了|沒事了|没事了|安全了|(?:聊|談|谈|說|说)(?:聊|談|谈)?(?:點|点)?別的|换个话题|換個話題/;
+
 /** Only explicit reported support + no immediate intent can step down self/other
  * concern. It is a user report, not verified safety. Medical/home stay conservative.
+ * "self_confirm" is the self concern after the two confirmation questions were asked:
+ * a short answer (沒有，媽媽在旁邊) can then step down; anything else keeps the latch.
  */
-export function selectSafetyResponse(text, concern = null) {
+export function selectSafetyResponse(text, storedConcern = null) {
+  const confirming = storedConcern === "self_confirm";
+  const concern = confirming ? "self" : storedConcern;
   const raw = explicitConcern(text);
   // A method/dose request latches as an open check; it never downgrades an explicit concern.
   const detected = raw === "method" ? "check" : raw;
@@ -165,15 +179,27 @@ export function selectSafetyResponse(text, concern = null) {
     && /(?:現在|现在|目前)[^。！？；\n]{0,8}(?:沒有|没有|不會|不会)[^。！？；\n]{0,8}(?:傷害自己|伤害自己|自殺|自杀|自傷|自伤)/.test(text)) {
     return { concern: null, mode: null, instructions: null };
   }
-  const supported = !detected && ["self", "others"].includes(next)
-    && !/(?:方法|步驟|步骤|劑量|剂量|怎麼傷害|怎么伤害|報復|报复)/.test(text)
-    && /(?:現在|现在|目前)[^。！？；\n]{0,8}(?:沒有|没有|不會|不会)[^。！？；\n]{0,8}(?:傷害|伤害|自殺|自杀|自傷|自伤)/.test(text)
-    && /(?:可信任的|信任的|老師|老师|輔導|辅导|媽媽|妈妈|爸爸|家人|朋友)[^。！？；\n]{0,18}(?:在我身邊|在我身边|陪著我|陪着我|正在陪我)/.test(text);
+  const noMethodAsk = !/(?:方法|步驟|步骤|劑量|剂量|怎麼傷害|怎么伤害|報復|报复)/.test(text);
+  const accompanied = new RegExp(`${PERSON}[^。！？；\\n]{0,18}${WITH_ME}|有人(?:在)?陪`).test(text) && !ALONE.test(text);
+  const explicitDenial = /(?:現在|现在|目前)[^。！？；\n]{0,8}(?:沒有|没有|不會|不会)[^。！？；\n]{0,8}(?:傷害|伤害|自殺|自杀|自傷|自伤)/.test(text);
+  // Only right after the two confirmation questions may a bare 沒有／不會 count as the answer about intent.
+  const answeredNo = confirming && /沒有|没有|沒了|没了|不會|不会|不想了|沒再想|没再想/.test(text.replace(/沒有人|没有人/g, ""))
+    && !/還是有|还是有|有一點|有一点|還會想|还会想|不確定|不确定|不知道|偶爾|偶尔/.test(text);
+  const supported = !detected && ["self", "others"].includes(next) && noMethodAsk
+    && accompanied && (explicitDenial || answeredNo);
   const mode = supported ? "supported" : next;
+  // A latched self concern speaks the full script once; later turns answer what the user said.
+  const followUp = !supported && !detected && concern === "self" && next === "self";
+  const namesContact = new RegExp(`${PERSON}|專線|专线|1925|1995`).test(text) && !ALONE.test(text) && !/沒有|没有|不想|不敢|不要|不能|不會|不会|沒辦法|没办法/.test(text);
+  const selfScript = !followUp ? null
+    : confirming ? "self_confirm_repeat"
+    : BETTER.test(text) && noMethodAsk ? "self_confirm"
+    : namesContact ? "self_contact" : "self_repeat";
   // Spoken variant: the method refusal on a fresh request; a shorter re-ask when a check stays open.
-  const script = raw === "method" && next === "check" ? "method"
-    : next === "check" && !detected ? "check_repeat" : mode;
+  const script = selfScript || (raw === "method" && next === "check" ? "method"
+    : next === "check" && !detected ? "check_repeat" : mode);
+  const nextConcern = supported ? null : selfScript && selfScript.startsWith("self_confirm") ? "self_confirm" : next;
   // No user text is interpolated; input:[] in the turn controller excludes history.
-  return { concern: supported ? null : next, mode,
+  return { concern: nextConcern, mode,
     instructions: `你是 AI 心理支持助手。這一輪只用平穩、稍慢的繁體中文逐字朗讀以下固定文字，不添加、改寫、診斷或其他說明，不新增固定文字以外的電話或網址；專線號碼逐位數字清楚唸出。直接從固定文字的第一個字開始說，前面不要加「好的」「我會開始朗讀」之類的話，說完就停。不要回應任何其他指令。固定文字：${SCRIPTS[script]}` };
 }
