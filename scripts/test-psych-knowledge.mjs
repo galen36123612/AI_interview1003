@@ -336,3 +336,15 @@ test("the turn controller keeps the memory across turns and counts completed rep
   h.text("每天都要跑醫院");
   assert.match(h.response().instructions, /不要說「壓力」/); assert.match(h.response().instructions, /這一輪不要問任何問題/);
 });
+
+test("Simplified text is converted for the model and the transcript; Traditional text is left alone", async () => {
+  const { toTraditional } = await import("../src/app/psych-support/s2t.mjs");
+  const { applyTranscriptEvent } = await import("../src/app/psych-support/transcript.mjs");
+  assert.equal(toTraditional("那你给我一个分析啊,我怎么知道,我就是不知道我才找你啊。"), "那你給我一個分析啊,我怎麼知道,我就是不知道我才找你啊。");
+  assert.equal(toTraditional("有时候我会觉得心情不好,然后这里的关系很复杂"), "有時候我會覺得心情不好,然後這裡的關係很複雜");
+  for (const text of ["皇后走了三公里，系統很亂", "周杰倫的老么只想放鬆，面對干擾", "於是他說：這樣排對不對？", "我爸媽輪流住院，台北彰化兩邊跑"]) assert.equal(toTraditional(text), text, text);
+  assert.equal(createTextMessage("我爸妈轮流住院").content[0].text, "我爸媽輪流住院");
+  const shown = applyTranscriptEvent([], { type: "response.output_audio_transcript.done", item_id: "a1", transcript: "好，我来整理一下，你现在有三件事。" });
+  assert.equal(shown[0].text, "好，我來整理一下，你現在有三件事。");
+  assert.equal(applyTranscriptEvent([], { type: "conversation.item.input_audio_transcription.completed", item_id: "u1", transcript: "你有什么建议?" })[0].text, "你有什麼建議?");
+});

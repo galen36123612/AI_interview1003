@@ -1,6 +1,7 @@
 import { selectSafetyResponse } from "./safety.mjs";
 import { routeKnowledge, noteReply, citationFooter, matchesBoundedReply, namesReferences } from "./knowledge.mjs";
 import { KNOWLEDGE } from "./knowledge.generated.mjs";
+import { toTraditional } from "./s2t.mjs";
 import { diagnosticSink, createDiagnosticEmitter, safeErrorDetails } from "./diagnostics.mjs";
 
 /** Arbitrate typed and spoken turns in memory. No audio or raw event logging. */
@@ -10,7 +11,8 @@ export const VOICE_TURN_DETECTION = Object.freeze({
 
 export function createTextMessage(text) {
   return { id: `msg_${crypto.randomUUID().replaceAll("-", "").slice(0, 24)}`, type: "message", role: "user",
-    content: [{ type: "input_text", text }] };
+    // The model mirrors the script it reads; typed Simplified text is sent as Traditional so replies stay Traditional.
+    content: [{ type: "input_text", text: toTraditional(text) }] };
 }
 
 /** Show schema diagnostics only; never expose upstream messages or input payloads. */

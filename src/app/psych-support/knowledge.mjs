@@ -1,6 +1,7 @@
 import { KNOWLEDGE } from "./knowledge.generated.mjs";
 import { PASSAGES } from "./passages.generated.mjs";
 import { PSYCH_SUPPORT_INSTRUCTIONS } from "./instructions.mjs";
+import { toTraditional } from "./s2t.mjs";
 
 const topicWords = {
   school: ["課業", "學校", "升學", "學生", "國中", "高中", "拒學", "不想上學", "霸凌", "排擠", "被欺負"],
@@ -153,9 +154,8 @@ const thirdPartyRisk = /(?:朋友|同學|同事|室友|家人|男友|女友|男�
 const softSignal = /看不[到見](?:未來|希望|出路|明天)|沒有(?:未來|希望|出路)了?(?![的可])|(?:人生|活著|一切|什麼)都?(?:沒有?|毫無)(?:意義|意思)|撐不(?:下去|住)了|再見了|永別|最後一次(?:跟你|和你|找你)?(?:說|聊|講)|以後不會再(?:來|打擾|煩)/;
 const outOfScope = /(?:幫我|替我|給我|請)[^。！？!?]{0,10}(?:寫|做|算|解|翻|查)[^。！？!?]{0,14}(?:程式|程式碼|python|javascript|java|sql|excel|code|演算法|作業|報告|論文|作文|履歷|數學|翻譯|食譜|股票)|^(?:請|可以|能不能|可不可以)?(?:寫|給我)[^。！？!?]{0,6}(?:程式|程式碼|python|javascript|sql|code)|翻譯成|翻成(?:英文|日文|中文)/i;
 
-// ASR often returns Simplified characters for Taiwanese speech; guide detection reads a Traditional copy.
-const S2T = Object.fromEntries([..."么麼议議给給个個见見说說压壓这這对對觉覺样樣时時没沒还還让讓听聽讲講问問帮幫为為办辦处處应應该該请請谈談别別烦煩紧緊会會断斷错錯误誤乱亂话話认認虑慮忧憂郁鬱难難过過气氣报報后後种種总總结結业業师師妈媽爱愛亲親现現实實经經发發间間题題关關虽雖岁歲钱錢医醫药藥护護顾顧够夠边邊开開门門东東车車买買卖賣觉覺庆慶头頭脑腦脸臉怀懷惊驚恼惱愤憤伤傷纠糾缠纏烧燒疗療场場".matchAll(/(.)(.)/gu)].map((m) => [m[1], m[2]]));
-const traditional = (text) => text.replace(/[\u4e00-\u9fff]/g, (ch) => S2T[ch] || ch);
+// Guide detection reads a Traditional copy; ASR often returns Simplified characters for Taiwanese speech.
+const traditional = toTraditional;
 
 // Feelings the user may tell us they never said. Stored as these ids only, never as user text.
 const LABELS = Object.freeze({
@@ -166,7 +166,7 @@ const LABELS = Object.freeze({
 const correction = /我(?:根本)?(?:也)?(?:沒有?|並沒有?|又沒有?|哪有)(?:說|講)(?:過)?(?:我|自己)?[^。！？!?]{0,3}(?:壓力|焦慮|緊張|憂鬱|低落|生氣|難過|傷心|害怕|孤單|寂寞|累|無助|崩潰|很|好|這麼|那麼|不開心|不快樂|有問題|有病)|你(?:怎麼|為什麼|幹嘛)(?:會)?(?:一直)?(?:知道|說|覺得|認為|判斷)我|(?:這個|你的|這)判斷(?:不對|錯)|不要(?:再)?(?:說|講|覺得)我|不要(?:亂|隨便|一直)(?:猜|判斷|下結論|貼標籤)|誰(?:說|跟你說)我|我(?:才|並|又)?沒有?(?:壓力|焦慮|憂鬱|生氣|難過|害怕|孤單|無助|崩潰)/;
 const asksToOrganize = /不知道[^。！？!?]{0,10}(?:才|所以)[^。！？!?]{0,4}(?:找|問)你(?:啊|呀|嘛|的|聊|談|說|幫|[，,。！!？?\\s]|$)|(?:所以|才)[^。！？!?]{0,4}(?:找|問)你(?:啊|呀|嘛|的|聊|談|說|幫|[，,。！!？?\\s]|$)|(?:給|幫)我[^。！？!?]{0,6}(?:分析|整理|意見|方向|想法|理一理)|你(?:有什麼|有沒有|的)(?:建議|意見|看法)|(?:看|聽)你的(?:意見|建議|看法)|你(?:覺得|說)我?(?:該|應該|要)(?:怎麼|先)/;
 // Short spoken answers that are complete as they are; anything else this short may be an ASR error.
-const SHORT_OK = new Set("好 好啊 好的 好喔 對 對啊 對呀 嗯 嗯嗯 是 是啊 不是 沒有 有 有啊 可以 不行 不要 要 想 不想 會 不會 還好 謝謝 你好 嗨 哈囉 然後呢 然後 為什麼 晚安 再見 掰掰 沒事 算了 不知道 很煩 好煩 好累 很累 想哭 難過 好難過 睡不著 是的 沒錯 不對 真的 還有 還有呢 怎麼辦 怎麼做 請說 你說".split(" "));
+const SHORT_OK = new Set("好 好啊 好的 好喔 對 對啊 對呀 嗯 嗯嗯 是 是啊 不是 沒有 有 有啊 可以 不行 不要 要 想 不想 會 不會 還好 謝謝 你好 嗨 哈囉 然後呢 然後 然后呢 然后 為什麼 晚安 再見 掰掰 沒事 算了 不知道 很煩 好煩 好累 很累 想哭 難過 好難過 睡不著 是的 沒錯 不對 真的 還有 還有呢 怎麼辦 怎麼做 請說 你說".split(" "));
 const looksUnclear = (text) => { const core = text.replace(/[\p{P}\p{Z}\s啊呀喔哦啦吧嘛耶欸]/gu, ""); return core.length > 0 && core.length <= 3 && !SHORT_OK.has(text.replace(/[\p{P}\p{Z}\s]/gu, "")) && !SHORT_OK.has(core); };
 
 /** Conversation memory: label ids the user rejected, and how many replies in a row ended with a question. */

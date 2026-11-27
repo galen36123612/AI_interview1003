@@ -58,6 +58,7 @@ Next.js 15 + OpenAI Realtime（WebRTC）。瀏覽器直連 OpenAI，伺服器只
 
 - `npm run check`：lint（零警告）＋ `node --test scripts/test-psych-*.mjs` ＋ build。推任何分支前都要過。
 - `npm run safety:stress`：安全護欄壓力題庫報告。改 `safety.mjs` 前後各跑一次。
+- `src/app/psych-support/s2t.generated.mjs`（簡轉繁字表）不要手改；重建方式寫在 `scripts/build-s2t-table.py` 開頭，只能在 macOS 上跑。
 - `npm run knowledge:build`：改了 `data/psych-support/` 後重建 `knowledge.generated.mjs` 與 `passages.generated.mjs`；兩個產出檔不要手改。
 
 ## 安全規則（改這一區的程式必須遵守）

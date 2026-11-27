@@ -1,7 +1,10 @@
+import { toTraditional } from "./s2t.mjs";
 /** Keep only visible messages in tab memory; never retain raw events or credentials. */
 export function applyTranscriptEvent(messages, event) {
   const upsert = (id, role, text, append = false) => {
     if (!id || !["user", "assistant"].includes(role) || typeof text !== "string") return messages;
+    // Shown text is always Traditional, whatever script the recognizer or the model produced.
+    text = toTraditional(text);
     const previous = messages.find((m) => m.id === id);
     const next = { id, role, text: append ? (previous?.text || "") + text : text, receivedAt: previous?.receivedAt ?? Date.now() };
     return previous ? messages.map((m) => m.id === id ? next : m) : [...messages, next].slice(-200);
