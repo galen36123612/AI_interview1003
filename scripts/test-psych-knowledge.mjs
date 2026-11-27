@@ -307,6 +307,11 @@ test("conversation memory: a rejected label is remembered, simplified ASR text i
     assert.equal(routeKnowledge(text, null).route, "organize", text);
   }
   assert.equal(routeKnowledge("我该怎么办", null).route, "one_step");
+  // Simplified input adds a Traditional-only reminder that stays for later turns; Traditional input never does.
+  const simp = routeKnowledge("我爸妈轮流住院,很烦", null);
+  assert.match(simp.instructions, /必須是繁體中文/); assert.equal(simp.memory.simplified, true);
+  assert.match(routeKnowledge("每天都要跑醫院", simp.state, { memory: simp.memory }).instructions, /必須是繁體中文/);
+  assert.doesNotMatch(routeKnowledge("我爸媽輪流住院，走了三公里，系統很亂", null).instructions, /必須是繁體中文/);
   // Two replies ending in a question: the third turn is told not to ask.
   let memory = noteReply(noteReply(null, "最近是發生什麼事嗎？"), "你現在最想要的是什麼呢");
   assert.equal(memory.askStreak, 2);

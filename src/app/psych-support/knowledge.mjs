@@ -154,7 +154,7 @@ const softSignal = /看不[到見](?:未來|希望|出路|明天)|沒有(?:未�
 const outOfScope = /(?:幫我|替我|給我|請)[^。！？!?]{0,10}(?:寫|做|算|解|翻|查)[^。！？!?]{0,14}(?:程式|程式碼|python|javascript|java|sql|excel|code|演算法|作業|報告|論文|作文|履歷|數學|翻譯|食譜|股票)|^(?:請|可以|能不能|可不可以)?(?:寫|給我)[^。！？!?]{0,6}(?:程式|程式碼|python|javascript|sql|code)|翻譯成|翻成(?:英文|日文|中文)/i;
 
 // ASR often returns Simplified characters for Taiwanese speech; guide detection reads a Traditional copy.
-const S2T = Object.fromEntries([..."么麼议議给給个個见見说說压壓这這对對觉覺样樣时時没沒还還让讓听聽讲講问問帮幫为為办辦处處应應该該请請谈談别別烦煩紧緊会會断斷错錯误誤乱亂话話认認虑慮忧憂郁鬱难難过過气氣报報后後里裡种種总總结結业業师師妈媽爱愛亲親现現实實经經发發间間题題关關系係虽雖岁歲钱錢医醫药藥护護顾顧够夠边邊开開门門东東车車买買卖賣觉覺庆慶头頭脑腦脸臉怀懷惊驚恼惱愤憤伤傷纠糾缠纏烧燒疗療场場".matchAll(/(.)(.)/gu)].map((m) => [m[1], m[2]]));
+const S2T = Object.fromEntries([..."么麼议議给給个個见見说說压壓这這对對觉覺样樣时時没沒还還让讓听聽讲講问問帮幫为為办辦处處应應该該请請谈談别別烦煩紧緊会會断斷错錯误誤乱亂话話认認虑慮忧憂郁鬱难難过過气氣报報后後种種总總结結业業师師妈媽爱愛亲親现現实實经經发發间間题題关關虽雖岁歲钱錢医醫药藥护護顾顧够夠边邊开開门門东東车車买買卖賣觉覺庆慶头頭脑腦脸臉怀懷惊驚恼惱愤憤伤傷纠糾缠纏烧燒疗療场場".matchAll(/(.)(.)/gu)].map((m) => [m[1], m[2]]));
 const traditional = (text) => text.replace(/[\u4e00-\u9fff]/g, (ch) => S2T[ch] || ch);
 
 // Feelings the user may tell us they never said. Stored as these ids only, never as user text.
@@ -173,7 +173,7 @@ const looksUnclear = (text) => { const core = text.replace(/[\p{P}\p{Z}\s啊呀�
 export function previousMemory(value) {
   const m = value || {};
   return { avoid: Array.isArray(m.avoid) ? [...new Set(m.avoid.filter((id) => Object.hasOwn(LABELS, id)))] : [],
-    noLabels: m.noLabels === true, askStreak: Number.isInteger(m.askStreak) && m.askStreak > 0 ? Math.min(m.askStreak, 9) : 0 };
+    noLabels: m.noLabels === true, simplified: m.simplified === true, askStreak: Number.isInteger(m.askStreak) && m.askStreak > 0 ? Math.min(m.askStreak, 9) : 0 };
 }
 /** Called with each completed assistant reply. */
 export function noteReply(memory, replyText) {
@@ -190,6 +190,9 @@ function memoryRules(memory, guideId) {
   }
   if (memory.askStreak >= 2 && !QUESTION_GUIDES.has(guideId)) {
     rules.push("你已經連續兩輪用問句結尾，對方一直在回答你的問題。這一輪不要問任何問題，句尾不用「嗎」「呢」「怎麼樣」，也不要用「你可以…」把問題包成建議。用一兩句說出你聽到的具體內容就停，讓對方決定要不要往下說。");
+  }
+  if (memory.simplified) {
+    rules.push("對話裡出現了簡體字，那是語音辨識或輸入法造成的，對方是台灣的使用者。這一輪你說出的每一個字都必須是繁體中文、台灣用語（這、個、說、還、會、沒、對、麼），不可以跟著用簡體字。");
   }
   return rules.length ? `\n\n# 這段對話要記住的事\n${rules.join("\n")}` : "";
 }
@@ -220,8 +223,10 @@ export function routeKnowledge(text, previous = null, { memory: previousMem = nu
   const said = traditional(input);
   const corrected = correction.test(said);
   const before = previousMemory(previousMem);
-  const memory = corrected ? { ...before, noLabels: true,
-    avoid: [...new Set([...before.avoid, ...Object.keys(LABELS).filter((id) => LABELS[id].some((word) => said.includes(word)) || said.includes(id))])] } : before;
+  // Once Simplified text has appeared, the history holds it; keep reminding for the rest of the connection.
+  const seen = { ...before, simplified: before.simplified || said !== input };
+  const memory = corrected ? { ...seen, noLabels: true,
+    avoid: [...new Set([...before.avoid, ...Object.keys(LABELS).filter((id) => LABELS[id].some((word) => said.includes(word)) || said.includes(id))])] } : seen;
   const expandedInput = expandQuery(input);
   const explicitTopic = Object.keys(topicWords).find((key) => topicWords[key].some((word) => expandedInput.includes(word))) || null;
   const topic = explicitTopic || state.topic;
