@@ -153,6 +153,47 @@ const thirdPartyRisk = /(?:朋友|同學|同事|室友|家人|男友|女友|男�
 const softSignal = /看不[到見](?:未來|希望|出路|明天)|沒有(?:未來|希望|出路)了?(?![的可])|(?:人生|活著|一切|什麼)都?(?:沒有?|毫無)(?:意義|意思)|撐不(?:下去|住)了|再見了|永別|最後一次(?:跟你|和你|找你)?(?:說|聊|講)|以後不會再(?:來|打擾|煩)/;
 const outOfScope = /(?:幫我|替我|給我|請)[^。！？!?]{0,10}(?:寫|做|算|解|翻|查)[^。！？!?]{0,14}(?:程式|程式碼|python|javascript|java|sql|excel|code|演算法|作業|報告|論文|作文|履歷|數學|翻譯|食譜|股票)|^(?:請|可以|能不能|可不可以)?(?:寫|給我)[^。！？!?]{0,6}(?:程式|程式碼|python|javascript|sql|code)|翻譯成|翻成(?:英文|日文|中文)/i;
 
+// ASR often returns Simplified characters for Taiwanese speech; guide detection reads a Traditional copy.
+const S2T = Object.fromEntries([..."么麼议議给給个個见見说說压壓这這对對觉覺样樣时時没沒还還让讓听聽讲講问問帮幫为為办辦处處应應该該请請谈談别別烦煩紧緊会會断斷错錯误誤乱亂话話认認虑慮忧憂郁鬱难難过過气氣报報后後里裡种種总總结結业業师師妈媽爱愛亲親现現实實经經发發间間题題关關系係虽雖岁歲钱錢医醫药藥护護顾顧够夠边邊开開门門东東车車买買卖賣觉覺庆慶头頭脑腦脸臉怀懷惊驚恼惱愤憤伤傷纠糾缠纏烧燒疗療场場".matchAll(/(.)(.)/gu)].map((m) => [m[1], m[2]]));
+const traditional = (text) => text.replace(/[\u4e00-\u9fff]/g, (ch) => S2T[ch] || ch);
+
+// Feelings the user may tell us they never said. Stored as these ids only, never as user text.
+const LABELS = Object.freeze({
+  壓力: ["壓力", "喘不過氣", "壓得", "負擔很重", "重擔"], 焦慮: ["焦慮", "緊張", "不安"], 憂鬱: ["憂鬱", "低落", "沮喪"],
+  生氣: ["生氣", "憤怒", "火大"], 難過: ["難過", "傷心", "悲傷"], 害怕: ["害怕", "恐懼"], 孤單: ["孤單", "寂寞"],
+  累: ["很累", "疲憊", "精疲力盡", "累壞"], 無助: ["無助", "無力"], 崩潰: ["崩潰", "撐不住"],
+});
+const correction = /我(?:根本)?(?:也)?(?:沒有?|並沒有?|又沒有?|哪有)(?:說|講)(?:過)?(?:我|自己)?[^。！？!?]{0,3}(?:壓力|焦慮|緊張|憂鬱|低落|生氣|難過|傷心|害怕|孤單|寂寞|累|無助|崩潰|很|好|這麼|那麼|不開心|不快樂|有問題|有病)|你(?:怎麼|為什麼|幹嘛)(?:會)?(?:一直)?(?:知道|說|覺得|認為|判斷)我|(?:這個|你的|這)判斷(?:不對|錯)|不要(?:再)?(?:說|講|覺得)我|不要(?:亂|隨便|一直)(?:猜|判斷|下結論|貼標籤)|誰(?:說|跟你說)我|我(?:才|並|又)?沒有?(?:壓力|焦慮|憂鬱|生氣|難過|害怕|孤單|無助|崩潰)/;
+const asksToOrganize = /不知道[^。！？!?]{0,10}(?:才|所以)[^。！？!?]{0,4}(?:找|問)你(?:啊|呀|嘛|的|聊|談|說|幫|[，,。！!？?\\s]|$)|(?:所以|才)[^。！？!?]{0,4}(?:找|問)你(?:啊|呀|嘛|的|聊|談|說|幫|[，,。！!？?\\s]|$)|(?:給|幫)我[^。！？!?]{0,6}(?:分析|整理|意見|方向|想法|理一理)|你(?:有什麼|有沒有|的)(?:建議|意見|看法)|(?:看|聽)你的(?:意見|建議|看法)|你(?:覺得|說)我?(?:該|應該|要)(?:怎麼|先)/;
+// Short spoken answers that are complete as they are; anything else this short may be an ASR error.
+const SHORT_OK = new Set("好 好啊 好的 好喔 對 對啊 對呀 嗯 嗯嗯 是 是啊 不是 沒有 有 有啊 可以 不行 不要 要 想 不想 會 不會 還好 謝謝 你好 嗨 哈囉 然後呢 然後 為什麼 晚安 再見 掰掰 沒事 算了 不知道 很煩 好煩 好累 很累 想哭 難過 好難過 睡不著 是的 沒錯 不對 真的 還有 還有呢 怎麼辦 怎麼做 請說 你說".split(" "));
+const looksUnclear = (text) => { const core = text.replace(/[\p{P}\p{Z}\s啊呀喔哦啦吧嘛耶欸]/gu, ""); return core.length > 0 && core.length <= 3 && !SHORT_OK.has(text.replace(/[\p{P}\p{Z}\s]/gu, "")) && !SHORT_OK.has(core); };
+
+/** Conversation memory: label ids the user rejected, and how many replies in a row ended with a question. */
+export function previousMemory(value) {
+  const m = value || {};
+  return { avoid: Array.isArray(m.avoid) ? [...new Set(m.avoid.filter((id) => Object.hasOwn(LABELS, id)))] : [],
+    noLabels: m.noLabels === true, askStreak: Number.isInteger(m.askStreak) && m.askStreak > 0 ? Math.min(m.askStreak, 9) : 0 };
+}
+/** Called with each completed assistant reply. */
+export function noteReply(memory, replyText) {
+  const m = previousMemory(memory);
+  const asked = typeof replyText === "string" && /[？?]\s*$|(?:嗎|呢|怎麼樣|好嗎|可以嗎)[。.～~\s]*$/.test(replyText.trim());
+  return { ...m, askStreak: asked ? Math.min(m.askStreak + 1, 9) : 0 };
+}
+const QUESTION_GUIDES = new Set(["medical_boundary", "third_party_risk", "soft_check", "repair", "clarify", "unclear_audio", "out_of_scope"]);
+function memoryRules(memory, guideId) {
+  const rules = [];
+  if (memory.noLabels) {
+    const words = memory.avoid.flatMap((id) => LABELS[id]);
+    rules.push(`使用者糾正過你：他沒有說過自己${memory.avoid.length ? `「${memory.avoid.join("」「")}」` : "是那種感受"}，那是你替他下的判斷。從現在到對話結束${words.length ? `都不要說「${words.join("」「")}」這類詞，也` : "，"}不要換另一個形容詞替他的感受命名（例如改說他很辛苦、很為難、撐得很累）。只用他自己說過的詞，例如他說「煩」「事情太多」就用這些。`);
+  }
+  if (memory.askStreak >= 2 && !QUESTION_GUIDES.has(guideId)) {
+    rules.push("你已經連續兩輪用問句結尾，對方一直在回答你的問題。這一輪不要問任何問題，句尾不用「嗎」「呢」「怎麼樣」，也不要用「你可以…」把問題包成建議。用一兩句說出你聽到的具體內容就停，讓對方決定要不要往下說。");
+  }
+  return rules.length ? `\n\n# 這段對話要記住的事\n${rules.join("\n")}` : "";
+}
+
 function previousState(value) {
   const state = typeof value === "string" ? { topic: value } : value || {};
   const ids = (values) => Array.isArray(values) ? [...new Set(values.filter((id) => catalog.has(id)))].slice(0, 2) : [];
@@ -173,9 +214,14 @@ function referredArticles(input, state) {
  * source content. State contains only a topic enum and allowlisted catalog IDs.
  * The controller commits selection state only after a completed, uncancelled reply.
  */
-export function routeKnowledge(text, previous = null) {
+export function routeKnowledge(text, previous = null, { memory: previousMem = null, voice = false } = {}) {
   const input = typeof text === "string" ? text.slice(0, 8000) : "";
   const state = previousState(previous);
+  const said = traditional(input);
+  const corrected = correction.test(said);
+  const before = previousMemory(previousMem);
+  const memory = corrected ? { ...before, noLabels: true,
+    avoid: [...new Set([...before.avoid, ...Object.keys(LABELS).filter((id) => LABELS[id].some((word) => said.includes(word)) || said.includes(id))])] } : before;
   const expandedInput = expandQuery(input);
   const explicitTopic = Object.keys(topicWords).find((key) => topicWords[key].some((word) => expandedInput.includes(word))) || null;
   const topic = explicitTopic || state.topic;
@@ -183,16 +229,18 @@ export function routeKnowledge(text, previous = null) {
   let topicArticleIds = currentTopicArticles.length ? currentTopicArticles.map((a) => a.id)
     : explicitTopic ? [] : [...state.topicArticleIds];
   let guideId = null;
-  if (/診斷|確診|藥物劑量|吃多少藥|怎麼用藥|開藥|治療計畫/.test(input)) guideId = "medical_boundary";
-  else if (thirdPartyRisk.test(input)) guideId = "third_party_risk";
-  else if (softSignal.test(input)) guideId = "soft_check";
-  else if (outOfScope.test(input)) guideId = "out_of_scope";
-  else if (/只(?:要|想)?(?:聽|陪)|先聽我說|不用建議|不要(?:分析|建議)|只回/.test(input)) guideId = "listen";
-  else if (/你(?:理解|聽|想)錯|不是這個意思|不要再猜|你[^。！？!?]{0,6}(?:講|說|回|答)[^。！？!?]{0,6}(?:沒用|沒有用|沒幫助|沒有幫助|廢話)|答非所問|你在敷衍/.test(input)) guideId = "repair";
-  else if (/先這樣|不聊了|結束對話|先到這裡|晚安/.test(input)) guideId = "close";
-  else if (/怎麼(?:開口|跟.{0,12}說|說比較好)|幫我.{0,12}(?:說|寫)|台詞|開場|話術/.test(input)) guideId = "wording";
-  else if (/不知道怎麼說|講不清楚|說不清楚|沒聽清楚|沒有聽清楚/.test(input)) guideId = "clarify";
-  else if (/怎麼辦|怎麼做|給我.{0,5}建議|我該.{0,4}做/.test(input)) guideId = "one_step";
+  if (/診斷|確診|藥物劑量|吃多少藥|怎麼用藥|開藥|治療計畫/.test(said)) guideId = "medical_boundary";
+  else if (thirdPartyRisk.test(said)) guideId = "third_party_risk";
+  else if (softSignal.test(said)) guideId = "soft_check";
+  else if (outOfScope.test(said)) guideId = "out_of_scope";
+  else if (/只(?:要|想)?(?:聽|陪)|先聽我說|不用建議|不要(?:分析|建議)|只回/.test(said)) guideId = "listen";
+  else if (/你(?:理解|聽|想)錯|不是這個意思|不要再猜|你[^。！？!?]{0,6}(?:講|說|回|答)[^。！？!?]{0,6}(?:沒用|沒有用|沒幫助|沒有幫助|廢話)|答非所問|你在敷衍/.test(said) || corrected) guideId = "repair";
+  else if (/先這樣|不聊了|結束對話|先到這裡|晚安/.test(said)) guideId = "close";
+  else if (/怎麼(?:開口|跟.{0,12}說|說比較好)|幫我.{0,12}(?:說|寫)|台詞|開場|話術/.test(said)) guideId = "wording";
+  else if (/不知道怎麼說|講不清楚|說不清楚|沒聽清楚|沒有聽清楚/.test(said)) guideId = "clarify";
+  else if (asksToOrganize.test(said)) guideId = "organize";
+  else if (/怎麼辦|怎麼做|給我.{0,5}建議|我該.{0,4}做/.test(said)) guideId = "one_step";
+  else if (voice && !explicitTopic && looksUnclear(said)) guideId = "unclear_audio";
 
   let route = guideId || "core_only", articles = [], script = null, passages = [];
   let nextIds = [...state.articleIds];
@@ -269,13 +317,14 @@ export function routeKnowledge(text, previous = null) {
     : passages.length
       ? `${guideId ? `${KNOWLEDGE.guides.find((g) => g.id === guideId).guidance}\n` : ""}# 本輪檢索到的文章段落\n${GROUNDED_RULES}${passages.some((hit) => SENSITIVE_ARTICLES.has(hit.passage.a)) ? `\n${SENSITIVE_RULE}` : ""}\n\n${passageBlock(passages)}`
       : guideId ? KNOWLEDGE.guides.find((g) => g.id === guideId).guidance : "這輪只使用常駐原則，不載入文章或案例。";
-  return { topic, state: { topic, articleIds: nextIds, topicArticleIds, awaitingMenuChoice, offeredSummary }, route,
+  const remembered = script ? "" : memoryRules(memory, guideId);
+  return { topic, state: { topic, articleIds: nextIds, topicArticleIds, awaitingMenuChoice, offeredSummary }, route, memory,
     guideId: script ? null : guideId, replyMode: script ? "bounded_script" : passages.length ? "grounded" : "conversation", scriptedText: script,
     sourceMode: passages.length ? "passages" : articles.length ? "metadata_only" : "none", references,
     // No 延伸閱讀 link footer in the transcript at all (demo decision); references stay in metadata and traces.
     citations: [],
     passageIds: passages.map((hit) => hit.passage.id),
-    instructions: `${PSYCH_SUPPORT_INSTRUCTIONS}\n\n# 本輪載入的對話指引\n安全與核心規則始終優先。\n${addition}` };
+    instructions: `${PSYCH_SUPPORT_INSTRUCTIONS}\n\n# 本輪載入的對話指引\n安全與核心規則始終優先。\n${addition}${remembered}` };
 }
 
 /** Only punctuation/spacing and a short acknowledgment may differ. Do not attach

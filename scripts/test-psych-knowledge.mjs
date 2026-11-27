@@ -12,7 +12,7 @@ import { createTurnController, createTextMessage, describeRealtimeError } from "
 test("generated runtime data is reproducible, metadata-only and contains zero approved real cases", () => {
   const built = buildKnowledge();
   assert.equal(readFileSync(built.output, "utf8"), built.content);
-  assert.equal(KNOWLEDGE.articles.length, 54); assert.equal(KNOWLEDGE.guides.length, 10); assert.equal(KNOWLEDGE.cases.length, 0);
+  assert.equal(KNOWLEDGE.articles.length, 54); assert.equal(KNOWLEDGE.guides.length, 12); assert.equal(KNOWLEDGE.cases.length, 0);
   assert.deepEqual([1, 2, 3, 4, 5].map((page) => KNOWLEDGE.articles.filter((a) => a.source_page === page).length), [12, 12, 12, 12, 6]);
   for (const a of KNOWLEDGE.articles) {
     assert.deepEqual(Object.keys(a).sort(), ["id", "title", "url", "author", "date_published", "source_page", "keywords"].sort());
@@ -287,4 +287,47 @@ test("a complaint that the reply was useless loads the repair guide; self-blame 
   assert.equal(routeKnowledge("你剛剛講的根本沒用").route, "repair");
   assert.notEqual(routeKnowledge("我跟男朋友分手了，覺得自己很沒用").route, "repair");
   assert.match(routeKnowledge("你可以直接告訴我該怎麼做嗎").instructions, /必須說出一個具體/);
+});
+
+test("conversation memory: a rejected label is remembered, simplified ASR text is understood, question streaks are capped", async () => {
+  const { noteReply } = await import("../src/app/psych-support/knowledge.mjs");
+  const corrected = routeKnowledge("這樣你怎麼會知道我壓力大?我根本也沒有說我壓力大啊", null);
+  assert.equal(corrected.route, "repair"); assert.deepEqual(corrected.memory.avoid, ["壓力"]);
+  assert.match(corrected.instructions, /不要說「壓力」「喘不過氣」/);
+  // The rule rides on every later turn, whatever its route.
+  const later = routeKnowledge("就覺得時間上都不夠啊", corrected.state, { memory: corrected.memory });
+  assert.equal(later.route, "core_only"); assert.match(later.instructions, /使用者糾正過你/);
+  assert.doesNotMatch(routeKnowledge("就覺得時間上都不夠啊", null).instructions, /使用者糾正過你/);
+  // Not a correction about feelings.
+  for (const text of ["我沒有說我要去", "我同事一直說我做不好", "所以我才找你媽媽談"]) {
+    const r = routeKnowledge(text, null); assert.equal(r.memory.noLabels, false, text); assert.notEqual(r.route, "organize", text);
+  }
+  // "I don't know, that's why I came to you" and requests for analysis, in Traditional or Simplified.
+  for (const text of ["我不知道啊,所以我找你啊", "那你给我一个分析啊,我就是不知道我才找你啊。", "你有什么建议?", "看你的意见呢"]) {
+    assert.equal(routeKnowledge(text, null).route, "organize", text);
+  }
+  assert.equal(routeKnowledge("我该怎么办", null).route, "one_step");
+  // Two replies ending in a question: the third turn is told not to ask.
+  let memory = noteReply(noteReply(null, "最近是發生什麼事嗎？"), "你現在最想要的是什麼呢");
+  assert.equal(memory.askStreak, 2);
+  assert.match(routeKnowledge("每天都要跑醫院", null, { memory }).instructions, /這一輪不要問任何問題/);
+  assert.doesNotMatch(routeKnowledge("你理解錯了", null, { memory }).instructions, /這一輪不要問任何問題/);
+  memory = noteReply(memory, "每天跑醫院，還要顧公司的事。"); assert.equal(memory.askStreak, 0);
+  // Very short voice text that is not a normal short answer may be an ASR error; typed text is never treated so.
+  assert.equal(routeKnowledge("是接。", null, { voice: true }).route, "unclear_audio");
+  assert.equal(routeKnowledge("是接。", null).route, "core_only");
+  for (const text of ["對。", "很煩", "好累喔", "嗯嗯", "失眠", "然后呢?"]) assert.notEqual(routeKnowledge(text, null, { voice: true }).route, "unclear_audio", text);
+});
+
+test("the turn controller keeps the memory across turns and counts completed replies", () => {
+  const h = harness();
+  const reply = (item, transcript, n) => {
+    h.ctrl.handle({ type: "response.created", response: { id: `r${n}`, metadata: h.response().metadata } });
+    h.ctrl.handle({ type: "response.output_audio_transcript.done", response_id: `r${n}`, transcript });
+    h.ctrl.handle({ type: "response.done", response: { id: `r${n}`, status: "completed", metadata: { turn_id: item.id } } });
+  };
+  reply(h.text("我爸媽常常住院，覺得很煩"), "聽起來你壓力很大，最近是發生什麼事嗎？", 1);
+  reply(h.text("我根本沒有說我壓力大啊"), "抱歉，是我說錯了。你想多說一點嗎？", 2);
+  h.text("每天都要跑醫院");
+  assert.match(h.response().instructions, /不要說「壓力」/); assert.match(h.response().instructions, /這一輪不要問任何問題/);
 });

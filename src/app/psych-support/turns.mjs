@@ -1,5 +1,5 @@
 import { selectSafetyResponse } from "./safety.mjs";
-import { routeKnowledge, citationFooter, matchesBoundedReply, namesReferences } from "./knowledge.mjs";
+import { routeKnowledge, noteReply, citationFooter, matchesBoundedReply, namesReferences } from "./knowledge.mjs";
 import { KNOWLEDGE } from "./knowledge.generated.mjs";
 import { diagnosticSink, createDiagnosticEmitter, safeErrorDetails } from "./diagnostics.mjs";
 
@@ -60,6 +60,8 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
   // Carried in from the previous connection by the caller so a reconnect never clears an open concern.
   let safetyConcern = initialConcern;
   let knowledgeState = { topic: null, articleIds: [] };
+  // Rejected feeling labels and the question streak; kept for the whole connection, also across safety turns.
+  let memory = null;
   const audioItems = new Set();
   const blocked = new Set();
   const handled = new Set();
@@ -68,14 +70,16 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
   const sentEventTypes = new Map();
   let eventSequence = 0;
 
-  const contextFor = (text) => {
+  const contextFor = (text, kind = "text") => {
     const result = selectSafetyResponse(text, safetyConcern);
     if (result.concern !== safetyConcern) { safetyConcern = result.concern; onConcernChange(safetyConcern); }
     if (result.mode) {
       knowledgeState = { topic: null, articleIds: [] };
       return { safety: result.mode, instructions: result.instructions };
     }
-    const knowledge = routeKnowledge(text, knowledgeState);
+    const knowledge = routeKnowledge(text, knowledgeState, { memory, voice: kind === "voice" });
+    // A correction is remembered at once, even if this reply is later interrupted.
+    memory = knowledge.memory;
     return { knowledgeRoute: knowledge.route, instructions: knowledge.instructions,
       guideId: knowledge.guideId, replyMode: knowledge.replyMode, sourceMode: knowledge.sourceMode,
       references: knowledge.references, citations: knowledge.citations, passageIds: knowledge.passageIds, nextKnowledgeState: knowledge.state, scriptedText: knowledge.scriptedText };
@@ -234,6 +238,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
         if (active.scriptedText) trace("bounded_reply_checked", { turn_id: active.id,
           knowledge_route: active.knowledgeRoute, matches_script: active.sourceReplyAccepted });
         if (active.sourceReplyAccepted && active.nextKnowledgeState) knowledgeState = active.nextKnowledgeState;
+        if (active.kind !== "greeting" && !active.safety) memory = noteReply(memory, text);
         const footer = active.sourceReplyAccepted ? expectedFooter : "";
         if (typeof event[field] === "string" && !event[field].endsWith(footer)) event[field] += footer;
       }
@@ -263,7 +268,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
           discard(id); onNotice("沒有聽清楚，請再說一次或輸入文字。"); return false;
         }
         handled.add(id); onNotice("");
-        enqueue({ id, kind: "voice", ready: true, ...contextFor(text) });
+        enqueue({ id, kind: "voice", ready: true, ...contextFor(text, "voice") });
       }
       if (type === "response.created") {
         const response = event.response;
@@ -302,7 +307,7 @@ export function createTurnController({ send, setMicrophoneEnabled, onDiscard, on
     dispose() {
       disposed = true; pending = null;
       if (active?.delayTimer) cancelScheduled(active.delayTimer);
-      active = null; safetyConcern = null; knowledgeState = { topic: null, articleIds: [] };
+      active = null; safetyConcern = null; knowledgeState = { topic: null, articleIds: [] }; memory = null;
       audioItems.clear(); blocked.clear(); handled.clear(); deleted.clear(); cancelledResponses.clear();
       sentEventTypes.clear();
     },
